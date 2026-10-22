@@ -291,7 +291,7 @@
   });
   $('#b-dl').onclick = function () {
     var blob = new Blob([exportHtml()], { type: 'text/html;charset=utf-8' }), a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = '拼音對照表.html'; document.body.appendChild(a); a.click();
+    a.href = URL.createObjectURL(blob); a.download = decodeURIComponent((location.pathname.split('/').pop()) || '題庫.html'); document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
   $('#b-ai').onclick = function () {

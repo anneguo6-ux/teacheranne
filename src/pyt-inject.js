@@ -1,7 +1,8 @@
-// 把「拼音對照表.html」升級成可編輯、可新增題目的版本（可重複執行：每次都會換成最新的編輯器與拼音引擎）
-// 用法：node src/pyt-inject.js
+// 把「…題庫.html」升級成可編輯、可新增題目的版本（可重複執行：每次都會換成最新的編輯器與拼音引擎）
+// 用法：node src/pyt-inject.js 爭鮮題庫.html
 const fs = require('fs');
-const FILE = '拼音對照表.html';
+const FILE = process.argv[2];
+if (!FILE) throw new Error('用法：node src/pyt-inject.js 爭鮮題庫.html');
 let h = fs.readFileSync(FILE, 'utf8');
 
 // 1. 移除舊的注入內容
