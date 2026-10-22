@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>知識大富翁</title>
+<script>/*PINYIN_LIB*/</script>
+<script>window.MOE=/*MOE_DATA*/;</script>
+<style>
+:root{
+  --hdr:66px;
+  --bs:min(calc(100vh - var(--hdr) - 14px), calc(100vw - 350px));
+  --u:calc(var(--bs) / 100);
+  --ink:#2b2d42;
+  --lv1:#2eb872;--lv2:#2f80ed;--lv3:#8e44ad;--lv4:#e67e22;--lv5:#e63946;
+}
+@media (max-aspect-ratio:1/1){
+  :root{--bs:min(calc(100vw - 16px), calc(100vh - var(--hdr) - 200px));}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(135deg,#bdeaff 0%,#ffe9a8 38%,#ffc9de 70%,#d8c8ff 100%);
+  display:flex;flex-direction:column;height:100vh;line-height:1.55;user-select:none;
+}
+ruby{ruby-align:center;ruby-position:over}
+body[data-show=han] rt{display:none}
+body[data-show=py] ruby{display:inline-block;margin-right:.2em}
+body[data-show=py] .hz{display:none}
+body[data-show=py] .cell.corner .lab{font-size:calc(var(--u)*1.9);white-space:nowrap}
+body[data-show=py] .cell.corner .sub{font-size:calc(var(--u)*1.5)}
+body[data-show=py] .turn,body[data-show=py] .seg button{white-space:nowrap}
+body[data-show=py] rt{display:inline;font-size:1em;opacity:1}
+rt{font-size:.3333em;font-weight:700;line-height:1;letter-spacing:0;opacity:.9;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.4)}
+
+/* ---------- 背景裝飾 ---------- */
+.bgdeco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bgdeco span{position:absolute;opacity:.55;animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-22px) rotate(8deg)}}
+
+/* ---------- 上方列 ---------- */
+header{
+  height:var(--hdr);flex:none;position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  background:linear-gradient(90deg,#ff6b6b,#ffa94d,#ffd43b,#69db7c,#4dabf7,#9775fa);
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+.logo{font-size:30px;font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;padding-top:4px}
+.logo .spin{display:inline-block;animation:wob 2.4s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg) scale(1.15)}}
+.tools{display:flex;gap:10px;padding-top:4px}
+.tbtn{
+  background:#fff;border-radius:999px;padding:2px 16px 4px;font-size:20px;font-weight:800;
+  box-shadow:0 3px 0 rgba(0,0,0,.22);transition:transform .12s;white-space:nowrap
+}
+.tbtn:hover{transform:translateY(-2px) scale(1.04)}
+.tbtn:active{transform:translateY(2px)}
+.tbtn.set{background:#fff3bf}
+
+/* ---------- 主區 ---------- */
+main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:7px 10px;position:relative;z-index:1}
+@media (max-aspect-ratio:1/1){main{flex-direction:column;gap:6px}}
+#boardWrap{width:var(--bs);height:var(--bs);flex:none;position:relative}
+#board{
+  position:absolute;inset:0;display:grid;
+  grid-template-columns:1.5fr repeat(9,1fr) 1.5fr;grid-template-rows:1.5fr repeat(9,1fr) 1.5fr;
+  gap:calc(var(--u)*.45);padding:calc(var(--u)*.7);
+  background:linear-gradient(135deg,#fff,#fff7d6);border-radius:calc(var(--u)*2.5);
+  box-shadow:0 10px 30px rgba(80,40,120,.35),inset 0 0 0 calc(var(--u)*.5) #ffb703;
+}
+
+/* 格子 */
+.cell{
+  position:relative;border-radius:calc(var(--u)*1.2);overflow:hidden;cursor:default;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,hsl(var(--h) 95% 94%),hsl(var(--h) 90% 82%));
+  box-shadow:inset 0 0 0 calc(var(--u)*.22) rgba(255,255,255,.8),0 2px 3px rgba(0,0,0,.18);
+}
+.cell .band{
+  position:absolute;top:0;left:0;right:0;height:calc(var(--u)*2);background:var(--lv);
+  display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*1.25);line-height:1;letter-spacing:-.1em;
+}
+.cell .ico{
+  font-size:calc(var(--u)*5.3);line-height:1;margin-top:calc(var(--u)*-.5);
+  filter:drop-shadow(0 calc(var(--u)*.25) calc(var(--u)*.2) rgba(0,0,0,.3));
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+}
+.cell.corner{cursor:pointer;flex-direction:column;background:linear-gradient(150deg,var(--c1),var(--c2));color:#fff}
+.cell.corner:hover{filter:brightness(1.1)}
+.cell.corner .ico{font-size:calc(var(--u)*6.4);margin:0;animation:bob 1.8s ease-in-out infinite}
+.cell.corner .lab{font-size:calc(var(--u)*2.7);font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.3);line-height:1.5;padding-top:calc(var(--u)*.6)}
+.cell.corner .sub{position:absolute;top:calc(var(--u)*.3);left:0;right:0;text-align:center;font-size:calc(var(--u)*1.9);font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(calc(var(--u)*-.8)) rotate(6deg)}}
+.cell.step{animation:stepPulse .3s}
+@keyframes stepPulse{0%{transform:scale(1)}50%{transform:scale(1.12);filter:brightness(1.25)}100%{transform:scale(1)}}
+.cell.land{animation:landBlink .22s 6 alternate;z-index:4}
+@keyframes landBlink{from{filter:brightness(1);box-shadow:0 0 0 0 #ff0}to{filter:brightness(1.35) saturate(1.5);box-shadow:0 0 0 calc(var(--u)*.8) #ffe600,0 0 calc(var(--u)*3) calc(var(--u)*1) #ff9500;transform:scale(1.14)}}
+
+/* 棋子 */
+#tokens{position:absolute;inset:0;pointer-events:none;z-index:6}
+.token{position:absolute;width:calc(var(--u)*3.3);height:calc(var(--u)*3.3);transition:left .24s ease-in-out,top .24s ease-in-out}
+.token .tk{
+  width:100%;height:100%;border-radius:50%;background:var(--c);border:calc(var(--u)*.3) solid #fff;
+  display:grid;place-items:center;font-size:calc(var(--u)*2.1);line-height:1;
+  box-shadow:0 calc(var(--u)*.3) calc(var(--u)*.5) rgba(0,0,0,.4);
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+}
+.token.cur{z-index:3}
+.token.cur .tk{animation:curRing 1s ease-in-out infinite}
+@keyframes curRing{0%,100%{box-shadow:0 0 0 0 var(--c),0 4px 6px rgba(0,0,0,.4)}50%{box-shadow:0 0 0 calc(var(--u)*.9) rgba(255,255,255,.0),0 0 calc(var(--u)*1.4) calc(var(--u)*.6) var(--c)}}
+.token.hop .tk{animation:hop .24s}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(var(--u)*-2.2)) scale(1.15)}}
+
+/* 中央 */
+#center{
+  grid-area:2/2/11/11;position:relative;overflow:hidden;border-radius:calc(var(--u)*2);
+  background:radial-gradient(circle at 50% 40%,#fffdf0,#d6f1ff 60%,#ffd9ec);
+  display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+  box-shadow:inset 0 0 0 calc(var(--u)*.35) rgba(255,255,255,.9),inset 0 0 calc(var(--u)*3) rgba(120,80,200,.18);
+}
+#center::before{
+  content:"";position:absolute;left:50%;top:50%;width:200%;aspect-ratio:1;translate:-50% -50%;
+  background:repeating-conic-gradient(rgba(255,214,102,.28) 0 10deg,transparent 10deg 20deg);
+  animation:rays 40s linear infinite;pointer-events:none
+}
+@keyframes rays{to{rotate:360deg}}
+#center>*{position:relative}
+.title{
+  font-size:calc(var(--u)*var(--ts,6.4));font-weight:900;line-height:1.5;letter-spacing:.05em;white-space:nowrap;max-width:96%;
+  background:linear-gradient(90deg,#ff4d6d,#ff9f1c,#2eb872,#2f80ed,#8e44ad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 calc(var(--u)*.3) 0 rgba(255,255,255,.9));
+}
+.title ruby rt{color:#6a4c93;-webkit-text-fill-color:#6a4c93}
+.turn{
+  display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*4.6);font-weight:900;line-height:1.5;
+  background:#fff;border-radius:999px;padding:0 calc(var(--u)*2.6) 0 calc(var(--u)*1);
+  box-shadow:0 calc(var(--u)*.4) 0 var(--tc,#ccc),0 0 0 calc(var(--u)*.35) var(--tc,#ccc);
+}
+.turn .av{width:calc(var(--u)*5.6);height:calc(var(--u)*5.6);border-radius:50%;background:var(--tc,#ccc);display:grid;place-items:center;font-size:calc(var(--u)*3.6);line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;animation:bob 1.6s ease-in-out infinite}
+.seg{display:flex;background:#fff;border-radius:999px;padding:calc(var(--u)*.5);gap:calc(var(--u)*.4);box-shadow:0 0 0 calc(var(--u)*.3) #ffd166}
+.seg button{
+  font-size:calc(var(--u)*3.6);font-weight:900;line-height:1.5;padding:0 calc(var(--u)*2.4);border-radius:999px;background:transparent;color:#8d6e00;transition:.15s
+}
+.seg button.on{background:linear-gradient(180deg,#ffd43b,#ff922b);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 3px 0 #c76b00}
+.diceRow{display:flex;gap:calc(var(--u)*3);align-items:center;justify-content:center;height:calc(var(--u)*14.5)}
+.die{
+  width:calc(var(--u)*13);height:calc(var(--u)*13);background:linear-gradient(145deg,#fff,#e8e8f0);border-radius:calc(var(--u)*2.4);
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--u)*1.7);
+  box-shadow:0 calc(var(--u)*.7) 0 #b8b8d0,0 calc(var(--u)*1.4) calc(var(--u)*1.6) rgba(0,0,0,.3);
+}
+.die i{border-radius:50%;margin:12%;background:transparent}
+.die i.on{background:radial-gradient(circle at 35% 30%,#ff8fa3,#d90429 70%)}
+.die.one i.on{background:radial-gradient(circle at 35% 30%,#ff8fa3,#d90429 70%)}
+.die.rolling{animation:shake .18s linear infinite}
+.die.rolling+.die{animation-direction:reverse}
+@keyframes shake{0%{transform:rotate(-14deg) translate(-4px,2px)}25%{transform:rotate(10deg) translate(5px,-6px)}50%{transform:rotate(-8deg) translate(-5px,-3px)}75%{transform:rotate(16deg) translate(4px,5px)}100%{transform:rotate(-14deg) translate(-4px,2px)}}
+.die.pop{animation:diePop .5s}
+@keyframes diePop{0%{transform:scale(.6) rotate(-40deg)}60%{transform:scale(1.18) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+.die.hide{display:none}
+#rollBtn{
+  font-size:calc(var(--u)*5.4);font-weight:900;line-height:1.5;color:#fff;padding:0 calc(var(--u)*7);border-radius:999px;
+  background:linear-gradient(180deg,#ff6b6b,#e63946);text-shadow:0 2px 0 rgba(0,0,0,.3);
+  box-shadow:0 calc(var(--u)*.7) 0 #9d0208,0 calc(var(--u)*1.2) calc(var(--u)*1.4) rgba(0,0,0,.3);
+  animation:throb 1.2s ease-in-out infinite;transition:transform .1s;
+}
+#rollBtn:hover:not(:disabled){transform:scale(1.06)}
+#rollBtn:active:not(:disabled){transform:translateY(calc(var(--u)*.6))}
+#rollBtn:disabled{animation:none}
+@keyframes throb{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+#msg{
+  font-size:calc(var(--u)*3.3);font-weight:800;line-height:1.6;text-align:center;min-height:calc(var(--u)*7.4);
+  display:flex;align-items:center;justify-content:center;padding:0 calc(var(--u)*2);max-width:96%;
+  color:#4a3a7a;
+}
+.mascot{position:absolute !important;font-size:calc(var(--u)*6);animation:floaty 5s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+
+/* ---------- 側欄 ---------- */
+aside{
+  width:310px;height:var(--bs);flex:none;display:flex;flex-direction:column;gap:8px;min-height:0;
+  background:rgba(255,255,255,.82);border-radius:22px;padding:10px 12px;box-shadow:0 6px 20px rgba(80,40,120,.25);
+}
+@media (max-aspect-ratio:1/1){aside{width:var(--bs);height:auto;flex:1;min-height:0}}
+aside h3{font-size:clamp(18px,3.1vmin,28px);font-weight:900;line-height:1.7;color:#d6336c;flex:none}
+#players{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px}
+@media (max-aspect-ratio:1/1){#players{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pc{max-height:none;padding:2px 8px}.pc .pn{line-height:1.45}.pc .pm{font-size:clamp(16px,2.6vmin,24px)}aside h3{line-height:1.3}}
+.pc{
+  flex:1 1 0;max-height:92px;min-height:0;display:flex;align-items:center;gap:10px;padding:0 10px;position:relative;
+  background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--c) 18%,#fff));border-radius:16px;border:3px solid color-mix(in srgb,var(--c) 45%,#fff);
+  transition:transform .2s,box-shadow .2s;
+}
+.pc.cur{transform:scale(1.04);border-color:var(--c);box-shadow:0 0 0 3px #fff,0 0 14px 3px var(--c)}
+.pc .av{flex:none;width:clamp(34px,6.4vmin,58px);aspect-ratio:1;border-radius:50%;background:var(--c);display:grid;place-items:center;font-size:clamp(20px,3.8vmin,34px);border:3px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.pc .info{min-width:0;flex:1}
+.pc .pn{font-size:clamp(16px,2.9vmin,26px);font-weight:900;line-height:1.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .pm{font-size:clamp(18px,3.3vmin,30px);font-weight:900;color:#e67700;line-height:1.1}
+.pc .crown{position:absolute;right:6px;top:-12px;font-size:26px;animation:bob 1.4s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.pc.bump .pm{animation:bump .6s}
+@keyframes bump{0%,100%{transform:scale(1)}40%{transform:scale(1.35);color:#2eb872}}
+.legend{flex:none;font-size:clamp(13px,2.1vmin,18px);font-weight:700;line-height:1.7}
+.legend .row{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.legend .chip{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.legend .chip b{display:inline-block;min-width:1.7em;border-radius:6px;background:var(--lv);color:#fff;text-align:center;font-size:.85em;padding:0 2px;line-height:1.35}
+.hint{flex:none;font-size:clamp(13px,2.1vmin,18px);font-weight:700;color:#6a4c93;line-height:1.7}
+
+/* ---------- 彈窗 ---------- */
+#ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(40,20,80,.55);backdrop-filter:blur(3px)}
+#ov.show{display:flex}
+.box{
+  max-width:96vw;max-height:96vh;overflow:auto;background:linear-gradient(160deg,#fffdf4,#eaf6ff);border-radius:28px;padding:22px 28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 6px #fff,0 0 0 12px var(--bc,#ffb703);animation:boxIn .35s cubic-bezier(.2,1.4,.4,1);
+  line-height:1.8;user-select:text;
+}
+@keyframes boxIn{from{transform:scale(.6) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.btn{
+  font-size:clamp(20px,3.6vmin,32px);font-weight:900;line-height:1.7;padding:0 26px;border-radius:999px;color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 5px 0 rgba(0,0,0,.28);transition:transform .1s;white-space:nowrap
+}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+.btn.g{background:linear-gradient(180deg,#51cf66,#2b8a3e)}
+.btn.r{background:linear-gradient(180deg,#ff8787,#e03131)}
+.btn.b{background:linear-gradient(180deg,#74c0fc,#1971c2)}
+.btn.y{background:linear-gradient(180deg,#ffd43b,#f08c00)}
+.btn.p{background:linear-gradient(180deg,#b197fc,#6741d9)}
+.btn.s{font-size:clamp(16px,2.6vmin,22px);padding:0 16px}
+.row-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+
+/* 題目 */
+.qbox{width:min(1100px,95vw);text-align:center;--bc:var(--lvc)}
+.qhead{display:flex;align-items:center;justify-content:center;gap:18px}
+.qhead .qi{font-size:min(15vmin,130px);line-height:1.1;animation:bob 1.6s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.qhead .tag{font-size:clamp(20px,3.8vmin,34px);font-weight:900;line-height:1.7;color:#fff;background:var(--lvc);border-radius:999px;padding:0 22px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.qhead .who{font-size:clamp(18px,3.2vmin,28px);font-weight:800;line-height:1.7;color:#6a4c93}
+.qtext{font-size:clamp(28px,6vmin,56px);font-weight:900;line-height:1.9;margin:6px 0 4px;color:#2b2d42}
+.qans{
+  min-height:clamp(60px,11vmin,110px);display:flex;align-items:center;justify-content:center;margin-top:6px;border-radius:20px;
+  font-size:clamp(24px,5vmin,46px);font-weight:900;line-height:1.9;color:#1b7a3a;background:#dff8e6;border:4px dashed #51cf66;padding:0 18px;
+}
+.qans.hidden{visibility:hidden}
+.qans.show{animation:ansIn .45s}
+@keyframes ansIn{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
+
+/* 機會/命運卡 */
+.cardWrap{perspective:1200px;display:flex;flex-direction:column;align-items:center}
+.card{width:min(560px,86vw);height:min(52vh,420px);position:relative;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,1.3,.5,1)}
+.card.flip{transform:rotateY(180deg)}
+.card>div{position:absolute;inset:0;backface-visibility:hidden;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;box-shadow:inset 0 0 0 8px rgba(255,255,255,.6)}
+.card .back{background:repeating-linear-gradient(45deg,var(--c1),var(--c1) 16px,var(--c2) 16px,var(--c2) 32px);font-size:min(24vmin,200px);color:#fff}
+.card .front{transform:rotateY(180deg);background:linear-gradient(160deg,#fff,var(--c3))}
+.card .cico{font-size:min(17vmin,140px);line-height:1.2;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.card .ctxt{font-size:clamp(24px,5vmin,44px);font-weight:900;line-height:1.9}
+.card .camt{font-size:clamp(34px,8vmin,72px);font-weight:900;line-height:1.2;margin-top:6px}
+.camt.pos{color:#2b8a3e}.camt.neg{color:#e03131}
+.ctitle{font-size:clamp(24px,4.6vmin,42px);font-weight:900;line-height:1.9;margin-bottom:6px;text-align:center}
+
+/* 一覽 */
+.evlist{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;max-height:70vh;overflow:auto;padding:4px}
+.evi{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:4px 14px;font-size:clamp(17px,2.9vmin,26px);font-weight:800;line-height:1.85;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.evi .e{font-size:1.5em;line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.evi .t{flex:1}
+.evi .a{font-weight:900;border-radius:999px;padding:0 12px;color:#fff;line-height:1.5}
+.evi .a.pos{background:#2b8a3e}.evi .a.neg{background:#e03131}
+
+/* 設定 / 開始 */
+.sbox{width:min(1000px,96vw);display:flex;flex-direction:column;gap:8px;max-height:94vh}
+.sbox h2{font-size:clamp(24px,4.4vmin,40px);font-weight:900;line-height:1.9;text-align:center;color:#d6336c}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tabs button{font-size:clamp(17px,2.8vmin,24px);font-weight:900;line-height:1.7;padding:0 18px;border-radius:14px 14px 0 0;background:#e9ecef}
+.tabs button.on{background:#ffd43b;box-shadow:0 -3px 0 #f08c00 inset}
+.help{font-size:clamp(14px,2.2vmin,19px);font-weight:700;line-height:1.85;color:#495057;background:#fff9db;border-radius:12px;padding:2px 12px}
+textarea.big{width:100%;height:min(44vh,430px);resize:none;font:700 clamp(15px,2.4vmin,20px)/1.6 "Microsoft JhengHei",monospace;padding:10px;border-radius:14px;border:3px solid #adb5bd;user-select:text;background:#fff;color:#222}
+textarea.big:focus,input.txt:focus{outline:none;border-color:#4dabf7}
+input.txt{font:800 clamp(17px,2.8vmin,24px) "Microsoft JhengHei",sans-serif;border:3px solid #adb5bd;border-radius:12px;padding:3px 10px;width:100%;user-select:text;background:#fff;color:#222}
+.plist{display:grid;gap:8px}
+.prow{display:flex;gap:10px;align-items:center}
+.prow .av{flex:none;width:clamp(34px,6vmin,52px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(20px,3.6vmin,32px);border:3px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.prow input.num{width:7.5em;flex:none}
+.start-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px}
+@media (max-aspect-ratio:1/1){.start-grid{grid-template-columns:1fr}}
+.lbl{font-size:clamp(18px,3vmin,26px);font-weight:900;line-height:1.9;color:#1971c2}
+.cnt{display:flex;gap:8px;flex-wrap:wrap}
+.cnt button{width:clamp(44px,7vmin,62px);aspect-ratio:1;border-radius:14px;background:#e9ecef;font-size:clamp(22px,3.8vmin,34px);font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.cnt button.on{background:linear-gradient(180deg,#ffd43b,#f08c00);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.chk{display:flex;align-items:center;gap:8px;font-size:clamp(16px,2.6vmin,22px);font-weight:800;line-height:1.9}
+.chk input{width:1.3em;height:1.3em}
+.status{font-size:clamp(15px,2.4vmin,20px);font-weight:800;line-height:1.9;color:#e8590c}
+
+/* 浮動分數 / 彩帶 */
+.ftext{position:fixed;z-index:70;font-size:44px;font-weight:900;pointer-events:none;text-shadow:0 3px 0 #fff,0 0 12px #fff;animation:fup 1.6s ease-out forwards}
+@keyframes fup{0%{transform:translate(-50%,0) scale(.5);opacity:0}15%{transform:translate(-50%,-10px) scale(1.4);opacity:1}100%{transform:translate(-50%,-110px) scale(1);opacity:0}}
+#fx{position:fixed;inset:0;z-index:60;pointer-events:none}
+.toast{position:fixed;left:50%;top:84px;translate:-50% 0;z-index:80;background:#2b2d42;color:#fff;border-radius:999px;padding:2px 24px;font-size:22px;font-weight:800;line-height:1.9;animation:toast 2.4s forwards;pointer-events:none}
+@keyframes toast{0%{opacity:0;transform:translateY(-14px)}10%,85%{opacity:1;transform:none}100%{opacity:0}}
+</style>
+</head>
+<body>
+<div class="bgdeco" id="bgdeco"></div>
+
+<header>
+  <div class="logo"><span class="spin">🎲</span><span id="logoT">知識大富翁</span></div>
+  <div class="tools">
+    <button class="tbtn" id="bSnd" title="音效">🔊 音效</button>
+    <button class="tbtn" id="bDl">⬇️ 下載成績</button>
+    <button class="tbtn" id="bNew">🔄 重新開始</button>
+    <button class="tbtn set" id="bSet">⚙️ 設定</button>
+  </div>
+</header>
+
+<main>
+  <div id="boardWrap">
+    <div id="board">
+      <div id="center">
+        <span class="mascot" style="left:2%;top:2%">🎈</span>
+        <span class="mascot" style="right:2%;top:2%;animation-delay:-2s">🌈</span>
+        <div class="title" id="gTitle">知識大富翁</div>
+        <div class="turn" id="turn"></div>
+        <div class="seg" id="seg">
+          <button data-n="1" class="on" title="一顆骰子">🎲</button>
+          <button data-n="2" title="兩顆骰子">🎲🎲</button>
+        </div>
+        <div class="diceRow"><div class="die" id="d1"></div><div class="die hide" id="d2"></div></div>
+        <button id="rollBtn" title="擲骰子">👆</button>
+        
+      </div>
+    </div>
+    <div id="tokens"></div>
+  </div>
+
+  <aside>
+    <h3>🏆 計分板</h3>
+    <div id="players"></div>
+  </aside>
+</main>
+
+<div id="ov"></div>
+<canvas id="fx"></canvas>
+
+<script>
+'use strict';
+/* =====================================================================
+   工具
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=n=>Math.floor(Math.random()*n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
+const store={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+};
+const EMOJI_FONT='"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji"';
+
+/* =====================================================================
+   漢語拼音：自動替所有漢字加上拼音（ruby），拼音大小 = 漢字的 1/3
+   ===================================================================== */
+const CJK=/[㐀-鿿豈-﫿]+/g;
+const CJK_TEST=/[㐀-鿿豈-﫿]/;
+/* 拼音以教育部《國語辭典簡編本》為準：先比對詞條（最長詞優先），沒有詞條的字用該字的簡編本讀音，
+   多音字再參考 pinyin-pro 依語境挑出簡編本收錄的讀音。 */
+const MOE_MAXL=9;
+const noTone=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ü/g,'v');
+function pyArr(s){
+  let lib=[];
+  try{lib=window.pinyinPro.pinyin(s,{type:'array'})}catch(e){}
+  const M=window.MOE||{w:{},c:{}},out=new Array(s.length);
+  let i=0;
+  while(i<s.length){
+    let hit=false;
+    for(let L=Math.min(MOE_MAXL,s.length-i);L>=2&&!hit;L--){
+      const py=M.w[s.substr(i,L)];
+      if(py){py.split(' ').forEach((x,k)=>out[i+k]=x);i+=L;hit=true}
+    }
+    if(hit)continue;
+    const rs=M.c[s[i]],r=lib[i]||'';
+    if(s[i]==='了'&&!(i>0&&'不得'.includes(s[i-1]))){out[i]='le';i++;continue}
+    out[i]=rs&&rs.length?(s.length===1?rs[0]:rs.includes(r)?r:(rs.find(x=>noTone(x)===noTone(r))||rs[0])):r;
+    i++;
+  }
+  return out;
+}
+function rubyFrag(text){
+  const frag=document.createDocumentFragment();let last=0,m;
+  const all=pyArr(text);
+  CJK.lastIndex=0;
+  while((m=CJK.exec(text))){
+    if(m.index>last)frag.append(text.slice(last,m.index));
+    const run=m[0],py=all.slice(m.index,m.index+run.length);
+    for(let i=0;i<run.length;i++){
+      const r=document.createElement('ruby');const hz=document.createElement('span');hz.className='hz';hz.textContent=run[i];r.append(hz);
+      const rt=document.createElement('rt');rt.textContent=py[i]||'';r.append(rt);frag.append(r);
+    }
+    last=m.index+run.length;
+  }
+  if(last<text.length)frag.append(text.slice(last));
+  return frag;
+}
+const SKIP='ruby,rt,textarea,input,script,style,option,title,[data-nopy]';
+function annotate(node){
+  if(!node||!node.isConnected)return;
+  const texts=[];
+  if(node.nodeType===3)texts.push(node);
+  else if(node.nodeType===1){
+    const w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);let t;
+    while((t=w.nextNode()))texts.push(t);
+  }
+  texts.forEach(t=>{
+    if(!t.isConnected||!CJK_TEST.test(t.nodeValue))return;
+    const p=t.parentElement;if(!p||p.closest(SKIP))return;
+    t.replaceWith(rubyFrag(t.nodeValue));
+  });
+}
+const OBS_CFG={childList:true,subtree:true,characterData:true};
+const obs=new MutationObserver(recs=>{
+  const set=new Set();
+  recs.forEach(r=>{if(r.type==='characterData')set.add(r.target);else r.addedNodes.forEach(n=>set.add(n))});
+  obs.disconnect();
+  set.forEach(annotate);
+  obs.observe(document.body,OBS_CFG);
+});
+
+/* =====================================================================
+   音效（Web Audio API 即時合成，不需外部檔案）
+   ===================================================================== */
+const Snd={
+  ctx:null,master:null,on:true,
+  init(){
+    try{
+      if(!this.ctx){
+        const AC=window.AudioContext||window.webkitAudioContext;
+        this.ctx=new AC();this.master=this.ctx.createGain();this.master.gain.value=.65;this.master.connect(this.ctx.destination);
+      }
+      if(this.ctx.state==='suspended')this.ctx.resume();
+    }catch(e){}
+  },
+  ok(){return this.on&&this.ctx},
+  tone(f,d,o={}){
+    if(!this.ok())return;
+    const {t=0,type='sine',v=.25,to=null}=o,c=this.ctx,t0=c.currentTime+t;
+    const osc=c.createOscillator(),g=c.createGain();
+    osc.type=type;osc.frequency.setValueAtTime(f,t0);
+    if(to)osc.frequency.exponentialRampToValueAtTime(to,t0+d);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v,t0+.015);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    osc.connect(g);g.connect(this.master);osc.start(t0);osc.stop(t0+d+.05);
+  },
+  noise(d,o={}){
+    if(!this.ok())return;
+    const {t=0,v=.3,f=1800,q=1}=o,c=this.ctx,t0=c.currentTime+t;
+    const len=Math.max(1,Math.floor(c.sampleRate*d)),buf=c.createBuffer(1,len,c.sampleRate),data=buf.getChannelData(0);
+    for(let i=0;i<len;i++)data[i]=Math.random()*2-1;
+    const src=c.createBufferSource();src.buffer=buf;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=q;
+    const g=c.createGain();g.gain.setValueAtTime(v,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    src.connect(bp);bp.connect(g);g.connect(this.master);src.start(t0);
+  },
+  roll(){for(let i=0;i<15;i++){const t=i*.065+i*i*.0035;this.noise(.05,{t,v:.4,f:900+Math.random()*2600,q:3});this.tone(170+Math.random()*140,.05,{t,type:'square',v:.05})}},
+  step(i=0){this.tone(460+(i%10)*38,.13,{type:'triangle',v:.3,to:700+(i%10)*38})},
+  land(){this.tone(330,.16,{v:.3});this.tone(660,.25,{t:.09,v:.3})},
+  flip(){this.noise(.3,{v:.22,f:3200,q:.7});this.tone(380,.28,{to:950,v:.12})},
+  coin(){this.tone(988,.08,{type:'square',v:.14});this.tone(1319,.4,{t:.08,type:'square',v:.14})},
+  win(){[523,659,784,1047,1319].forEach((f,i)=>this.tone(f,.24,{t:i*.1,type:'triangle',v:.3}));this.tone(1047,.7,{t:.5,v:.16});this.coin()},
+  lose(){[392,349,311,262].forEach((f,i)=>this.tone(f,.3,{t:i*.17,type:'sawtooth',v:.14}))},
+  click(){this.tone(720,.06,{type:'square',v:.1})}
+};
+
+/* =====================================================================
+   預設資料
+   ===================================================================== */
+const DEFAULT_Q=`# 格式：題目|答案|圖示|獎金（圖示、獎金可省略，省略時由系統自動判斷）
+「太陽」從哪個方向升起？|東邊|🌅|100
+一個星期有幾天？|七天|📅|100
+「大」的相反詞是什麼？|小|🐘|100
+「冷」的相反詞是什麼？|熱|🧊|100
+一年有幾個月？|十二個月|🗓️|100
+請說出三種顏色。|例如：紅色、黃色、藍色|🎨|100
+請用「喜歡」說一個句子。|例如：我喜歡吃水果。|❤️|100
+「謝謝」的回答可以說什麼？|不客氣|🙏|100
+台灣的貨幣單位是什麼？|新臺幣（元）|💰|200
+「木」加「木」是什麼字？|林|🌳|200
+「口」加「木」是什麼字？|杏（或呆）|🍑|200
+台灣的首都是哪裡？|臺北|🏙️|200
+請說出一種台灣夜市的小吃。|例如：珍珠奶茶、滷肉飯、臭豆腐|🧋|200
+「蘋果」的量詞可以用什麼？|一個、一顆|🍎|200
+「快樂」的近義詞是什麼？|高興|😄|300
+台灣最高的山是哪一座？|玉山|🏔️|300
+農曆新年的時候，小朋友會收到什麼？|紅包|🧧|300
+端午節的時候，大家會一起做什麼？|划龍舟、吃粽子|🐲|300
+中秋節的時候，大家會吃什麼？|月餅、柚子|🥮|300
+「明」字是由哪兩個字組成的？|日和月|🌓|300
+「人」站在「木」的旁邊是什麼字？|休|😴|400
+「1 + 2 × 3」等於多少？|7|🧮|400
+「媽、麻、馬、罵」依序是第幾聲？|第一聲、第二聲、第三聲、第四聲|🎵|400
+《西遊記》裡，會七十二變的是誰？|孫悟空|🐵|400
+「媽」字的部首是什麼？|女部|👩|500
+「床前明月光」的下一句是什麼？|疑是地上霜|🌕|500
+「一碗飯」的「碗」是什麼詞？|量詞|🍚|500
+〈靜夜思〉是誰寫的？|李白|📜|600
+「春眠不覺曉」的下一句是什麼？|處處聞啼鳥|🐦|600
+「我想喝茶」的「想」是什麼詞？|助動詞（能願動詞）|🍵|600
+成語「一石二鳥」是什麼意思？|做一件事，得到兩個好處（一舉兩得）|🪨|700
+成語「畫蛇添足」是什麼意思？|多做不必要的事，反而弄壞了|🐍|800
+「守株待兔」的故事告訴我們什麼？|不要想不勞而獲，要努力|🐇|800
+「我昨天去了學校」的「了」表示什麼？|動作已經完成|✅|900
+「我把書放在桌上」的「把」字句，被處理的是誰？|書|📚|900
+「不好意思」和「對不起」有什麼不同？|「不好意思」比較輕，常用在小事或客氣請求；「對不起」是正式的道歉|🙇|1000`;
+
+const DEFAULT_CHANCE=`# 格式：圖示|內容|金額（正數加錢，負數扣錢）
+🧧|撿到一個紅包！|200
+🎁|朋友送你一份生日禮物。|300
+🏆|比賽得到第一名！|500
+🎫|刮刮樂中獎了！|400
+🌟|做好事，老師獎勵你。|200
+🐶|幫小狗找到家，主人很感謝你。|300
+🌈|看到美麗的彩虹，好運來了。|100
+💰|在存錢筒裡發現零用錢！|250
+🍦|冰淇淋買太多了，花了一些錢。|-100
+📱|手機掉了，要拿去修理。|-200
+🎈|氣球飛走了，好可惜。|-100
+🚌|搭錯公車，多花了車錢。|-100`;
+
+const DEFAULT_FATE=`# 格式：圖示|內容|金額（正數加錢，負數扣錢）
+🦄|獨角獸送你一袋金幣！|500
+🚀|搭上火箭，大發財了！|600
+🍀|找到四葉幸運草！|300
+🎤|唱歌比賽得獎了。|400
+🧹|打掃教室，被大家稱讚。|200
+🎂|今天是幸運日，大家請你吃蛋糕。|200
+🌧️|下大雨忘了帶傘，只好買雨傘。|-200
+🍔|請全班同學吃漢堡。|-300
+🎢|遊樂園玩得太開心，花光零用錢。|-300
+🐛|午餐裡有小蟲蟲，要重新買。|-100
+🌪️|龍捲風把錢吹走了！|-400
+🐢|慢慢走也能賺，烏龜獎勵你。|100`;
+
+const COLORS=['#ff4d6d','#3a86ff','#06b36f','#ffa200','#8338ec','#fb5607'];
+const AVATARS=['🐶','🐱','🐰','🐼','🦊','🐸'];
+const TOTAL=40, QCOUNT=36, PASS_BONUS=200, START_MONEY=1000;
+const LV_COLOR=['','var(--lv1)','var(--lv2)','var(--lv3)','var(--lv4)','var(--lv5)'];
+const LV_HEX=['','#2eb872','#2f80ed','#8e44ad','#e67e22','#e63946'];
+
+/* 四個角落：0 起點(機會) 10 命運 20 機會 30 命運 */
+const CORNERS={
+  0 :{icon:'🏁',label:'機會',sub:'起點',kind:'chance',c1:'#ff9f1c',c2:'#e8590c'},
+  10:{icon:'🔮',label:'命運',sub:'',kind:'fate',c1:'#9775fa',c2:'#5f3dc4'},
+  20:{icon:'🍀',label:'機會',sub:'',kind:'chance',c1:'#51cf66',c2:'#2b8a3e'},
+  30:{icon:'🎰',label:'命運',sub:'',kind:'fate',c1:'#ff6b9d',c2:'#c2255c'}
+};
+const KIND_INFO={
+  chance:{name:'機會',icon:'🍀',c1:'#51cf66',c2:'#2b8a3e',c3:'#e3fbe8',bc:'#51cf66'},
+  fate:{name:'命運',icon:'🔮',c1:'#9775fa',c2:'#5f3dc4',c3:'#efe6ff',bc:'#9775fa'}
+};
+
+/* =====================================================================
+   題庫解析
+   ===================================================================== */
+const ICON_KEYS=`蘋果🍎|香蕉🍌|水果🍇|西瓜🍉|草莓🍓|橘🍊|葡萄🍇|飯🍚|麵🍜|粽🎋|月餅🥮|餃子🥟|紅包🧧|茶🍵|奶茶🧋|咖啡☕|水🚰|火🔥|山⛰️|海🌊|河🏞️|太陽🌅|月亮🌙|月🌙|星🌟|雨🌧️|雪❄️|風🌬️|雲☁️|花🌸|樹🌳|草🌱|貓🐱|狗🐶|鳥🐦|魚🐟|馬🐴|牛🐮|豬🐷|羊🐑|雞🐔|兔🐇|龍🐲|蛇🐍|猴🐵|悟空🐵|老虎🐯|熊貓🐼|書📚|筆✏️|學校🏫|老師👩‍🏫|學生🧑‍🎓|媽媽👩|爸爸👨|家🏠|車🚗|火車🚆|飛機✈️|船⛵|錢💰|貨幣💰|元💰|手機📱|電腦💻|電影🎬|音樂🎵|聲🎵|歌🎤|運動🏃|球⚽|醫🏥|病🤒|藥💊|衣👕|鞋👟|帽🎩|眼睛👀|耳朵👂|嘴👄|手✋|腳🦶|心❤️|喜歡❤️|愛❤️|笑😄|快樂😄|高興😄|哭😢|生氣😠|時間⏰|點鐘⏰|日期📅|星期📅|月份🗓️|生日🎂|蛋糕🎂|禮物🎁|國家🌏|世界🌏|台灣🏝️|臺灣🏝️|臺北🏙️|地圖🗺️|數學🧮|加🧮|乘🧮|顏色🎨|紅色🔴|藍色🔵|黃色🟡|綠色🟢|成語📖|詩📜|唐📜|拼音🔤|字✍️|詞📝|句💬|問❓|謝🙏|對不起🙇|你好👋|夜市🏮|節日🎉|春節🧨|新年🧨|中秋🌕|端午🐲|冷🧊|熱🔥|大🐘|小🐜|吃🍽️|喝🥤|睡😴|走🚶|跑🏃|看👀|聽👂|說🗣️|買🛒|賣🛍️|唱歌🎤|跳舞💃|畫🖼️|玩🎮`;
+const ICON_LIST=ICON_KEYS.split('|').map(s=>{const m=s.match(/^([^\u{1F000}-\u{1FFFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]+)(.+)$/u);return m?[m[1],m[2]]:null}).filter(Boolean);
+const GENERIC_ICONS=['🎯','🧩','💡','🎈','🌈','🎪','🚀','🎨','🔔','🍀','🎁','🧠','🎓','🌟','🎡','🦋'];
+function hashStr(s){let h=0;for(const c of s)h=(h*31+c.codePointAt(0))>>>0;return h}
+function autoIcon(text){
+  for(const [k,e] of ICON_LIST)if(text.includes(k))return e;
+  return GENERIC_ICONS[hashStr(text)%GENERIC_ICONS.length];
+}
+function estimateMoney(q,a){
+  let d=q.length+a.length*0.8;
+  if(/成語|意思|為什麼|詞性|用法|造句|區別|不同|部首|告訴我們|字句/.test(q))d+=10;
+  return clampMoney(100+d*18);
+}
+function clampMoney(n){return Math.min(1000,Math.max(100,Math.round(n/100)*100))}
+function unq(s){s=s.trim();if(s.length>1&&/^["“].*["”]$/.test(s))s=s.slice(1,-1);return s.trim()}
+function splitFields(line){
+  if(/[|｜\t]/.test(line))return line.split(/[|｜\t]/);
+  if(line.includes(','))return line.split(',');
+  return [line];
+}
+function parseQuestions(text){
+  const out=[];
+  String(text).split(/\r?\n/).forEach(raw=>{
+    const line=raw.replace(/^﻿/,'').trim();
+    if(!line||/^(#|\/\/)/.test(line))return;
+    const f=splitFields(line).map(unq);
+    if(!f[0]||f[0]==='題目')return;
+    const q=f[0],a=f[1]||'';let icon='',money=0;
+    f.slice(2).forEach(x=>{if(/^\d+$/.test(x))money=+x;else if(x)icon=x});
+    money=money?clampMoney(money):estimateMoney(q,a);
+    out.push({q,a,icon:icon||autoIcon(q+a),money,lv:Math.ceil(money/200)});
+  });
+  return out;
+}
+function parseEvents(text,kind){
+  const out=[];
+  String(text).split(/\r?\n/).forEach(raw=>{
+    const line=raw.replace(/^﻿/,'').trim();
+    if(!line||/^(#|\/\/)/.test(line))return;
+    const f=splitFields(line).map(unq);
+    let icon='',txt='',amt=0;
+    if(f.length>=3){icon=f[0];txt=f[1];amt=parseInt(f[2],10)}
+    else if(f.length===2){txt=f[0];amt=parseInt(f[1],10)}
+    else{txt=f[0]}
+    if(!txt||isNaN(amt))return;
+    out.push({icon:icon||KIND_INFO[kind].icon,text:txt,amt});
+  });
+  return out;
+}
+/* 湊滿 36 題 */
+function buildQuestionSet(items,doShuffle){
+  let list;
+  if(items.length>=QCOUNT){list=doShuffle?shuffle(items).slice(0,QCOUNT):items.slice(0,QCOUNT)}
+  else{
+    list=doShuffle?shuffle(items):items.slice();
+    let pool=[];
+    while(list.length+pool.length<QCOUNT)pool=pool.concat(shuffle(items));
+    list=list.concat(pool).slice(0,QCOUNT);
+    if(doShuffle)list=shuffle(list);
+  }
+  return list;
+}
+
+/* =====================================================================
+   狀態
+   ===================================================================== */
+const S={title:'知識大富翁',
+  players:[],cur:0,busy:false,diceN:1,
+  boardQ:[],               // 36 題
+  cellQ:{},                // 格子索引 -> 題目
+  texts:{q:store.get('dfw_q')||DEFAULT_Q,chance:store.get('dfw_chance')||DEFAULT_CHANCE,fate:store.get('dfw_fate')||DEFAULT_FATE},
+  shuffle:true,lastCount:2,
+  cells:[]
+};
+function events(kind){
+  const l=parseEvents(S.texts[kind],kind);
+  return l.length?l:parseEvents(kind==='chance'?DEFAULT_CHANCE:DEFAULT_FATE,kind);
+}
+
+/* =====================================================================
+   棋盤
+   ===================================================================== */
+function cellPos(i){ // 1 起算的 [row, col]
+  if(i===0)return [11,11];
+  if(i<10)return [11,11-i];
+  if(i===10)return [11,1];
+  if(i<20)return [11-(i-10),1];
+  if(i===20)return [1,1];
+  if(i<30)return [1,1+(i-20)];
+  if(i===30)return [1,11];
+  return [1+(i-30),11];
+}
+function buildBoard(){
+  const board=$('#board');
+  S.cells.forEach(c=>c.remove());S.cells=[];S.cellQ={};
+  let qi=0;
+  for(let i=0;i<TOTAL;i++){
+    const [r,c]=cellPos(i);
+    const d=el('div','cell');d.style.gridRow=r;d.style.gridColumn=c;
+    if(CORNERS[i]){
+      const k=CORNERS[i];
+      d.classList.add('corner');d.style.setProperty('--c1',k.c1);d.style.setProperty('--c2',k.c2);
+      d.innerHTML=(k.sub?`<div class="sub">${k.sub}</div>`:'')+`<div class="ico">${k.icon}</div><div class="lab">${k.label}</div>`;
+      d.title=k.label;
+      d.addEventListener('click',()=>{if(!$('#ov').classList.contains('show'))Snd.init(),showEventList(k.kind)});
+    }else{
+      const q=S.boardQ[qi++]||{icon:'❓',lv:1,money:100,q:'',a:''};
+      S.cellQ[i]=q;
+      d.style.setProperty('--h',(qi*37+20)%360);d.style.setProperty('--lv',LV_COLOR[q.lv]);
+      d.innerHTML=`<div class="band">${'⭐'.repeat(q.lv)}</div><div class="ico">${esc(q.icon)}</div>`;
+    }
+    board.append(d);S.cells.push(d);
+  }
+  placeTokens();
+}
+function applyBank(){
+  const items=parseQuestions(S.texts.q);
+  if(!items.length){S.texts.q=DEFAULT_Q;return applyBank()}
+  S.boardQ=buildQuestionSet(items,S.shuffle);
+  buildBoard();
+}
+
+/* 棋子 */
+function ensureTokens(){
+  const box=$('#tokens');
+  S.players.forEach((p,i)=>{
+    if(!p.tk){
+      p.tk=el('div','token');p.tk.style.setProperty('--c',p.color);
+      p.tk.innerHTML=`<div class="tk">${p.emoji}</div>`;box.append(p.tk);
+    }
+  });
+}
+function placeTokens(){
+  ensureTokens();
+  const wrap=$('#boardWrap').getBoundingClientRect();
+  if(!S.cells.length||!wrap.width)return;
+  const groups={};
+  S.players.forEach((p,i)=>{(groups[p.pos]=groups[p.pos]||[]).push(p)});
+  Object.entries(groups).forEach(([pos,ps])=>{
+    const r=S.cells[pos].getBoundingClientRect();
+    const tw=ps[0].tk.offsetWidth||30,n=ps.length;
+    const step=n>1?Math.min(tw*.92,(r.width-tw-6)/(n-1)):0;
+    ps.forEach((p,k)=>{
+      const x=r.left-wrap.left+(r.width-tw)/2+(k-(n-1)/2)*step;
+      const y=r.top-wrap.top+r.height-tw-r.height*.04;
+      p.tk.style.left=x+'px';p.tk.style.top=y+'px';
+    });
+  });
+  S.players.forEach((p,i)=>p.tk.classList.toggle('cur',i===S.cur&&!S.busy));
+}
+window.addEventListener('resize',()=>{S.players.forEach(p=>{if(p.tk)p.tk.style.transition='none'});placeTokens();requestAnimationFrame(()=>S.players.forEach(p=>{if(p.tk)p.tk.style.transition=''}))});
+
+/* =====================================================================
+   介面更新
+   ===================================================================== */
+const lastMoney=new Map();
+function renderPlayers(){
+  const box=$('#players');
+  const mx=Math.max(...S.players.map(p=>p.money)),top=S.players.length>1&&S.players.filter(p=>p.money===mx).length===1?mx:-1;
+  box.innerHTML='';
+  S.players.forEach((p,i)=>{
+    const d=el('div','pc'+(i===S.cur?' cur':''));d.style.setProperty('--c',p.color);
+    d.innerHTML=`<div class="av">${p.emoji}</div><div class="info"><div class="pn">${esc(p.name)}</div><div class="pm">💰 ${p.money}</div></div>${p.money===top&&top>0?'<div class="crown">👑</div>':''}`;
+    if(lastMoney.has(p)&&lastMoney.get(p)!==p.money)d.classList.add('bump');
+    lastMoney.set(p,p.money);
+    p.card=d;box.append(d);
+  });
+}
+function renderTurn(){
+  const t=$('#turn'),p=S.players[S.cur];
+  if(!p){t.innerHTML='請先開始遊戲';t.style.setProperty('--tc','#ccc');return}
+  t.style.setProperty('--tc',p.color);
+  t.innerHTML=`<span class="av">${p.emoji}</span><span>換${esc(p.name)} 了</span>`;
+}
+function say(){} // 訊息區已停用
+function toast(txt){const t=el('div','toast',esc(txt));document.body.append(t);setTimeout(()=>t.remove(),2500)}
+function setDie(d,n){
+  const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n];
+  d.innerHTML='';for(let i=0;i<9;i++)d.append(el('i',on.includes(i)?'on':''));d.dataset.v=n;
+}
+function setDiceMode(n){
+  S.diceN=n;
+  $('#seg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+  $('#d2').classList.toggle('hide',n===1);
+}
+function setRollBtn(){
+  const b=$('#rollBtn');b.disabled=S.busy||!S.players.length;
+  b.textContent=S.busy?'⏳':'👆';
+}
+
+/* 浮動分數 & 彩帶 */
+function floatText(txt,color,anchor){
+  const r=(anchor||$('#center')).getBoundingClientRect();
+  const f=el('div','ftext',esc(txt));f.style.color=color;f.style.left=(r.left+r.width/2)+'px';f.style.top=(r.top+r.height/2)+'px';
+  document.body.append(f);setTimeout(()=>f.remove(),1700);
+}
+const fx={cv:null,ctx:null,parts:[],run:false};
+function confetti(n=140,ox=.5,oy=.4){
+  fx.cv=fx.cv||$('#fx');fx.ctx=fx.ctx||fx.cv.getContext('2d');
+  fx.cv.width=innerWidth;fx.cv.height=innerHeight;
+  const cols=['#ff4d6d','#ffd43b','#51cf66','#4dabf7','#b197fc','#ff922b'];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=6+Math.random()*12;
+    fx.parts.push({x:innerWidth*ox,y:innerHeight*oy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-6,g:.3,s:6+Math.random()*8,c:cols[rnd(cols.length)],r:Math.random()*6,vr:(Math.random()-.5)*.4,life:110+rnd(60)});
+  }
+  if(!fx.run){fx.run=true;requestAnimationFrame(tick)}
+}
+function tick(){
+  const {ctx,cv}=fx;ctx.clearRect(0,0,cv.width,cv.height);
+  fx.parts=fx.parts.filter(p=>p.life-->0&&p.y<cv.height+20);
+  fx.parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.globalAlpha=Math.min(1,p.life/30);ctx.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);ctx.restore()});
+  if(fx.parts.length)requestAnimationFrame(tick);else{fx.run=false;ctx.clearRect(0,0,cv.width,cv.height)}
+}
+
+/* 加減錢 */
+function addMoney(p,amt){
+  const before=p.money;p.money=Math.max(0,p.money+amt);
+  renderPlayers();
+  const diff=p.money-before;
+  floatText((diff>0?'+':'')+diff+' 元',amt>=0?'#2b8a3e':'#e03131',p.card);
+}
+
+/* =====================================================================
+   彈窗
+   ===================================================================== */
+const ov=$('#ov');
+function showModal(box){ov.innerHTML='';ov.append(box);ov.classList.add('show')}
+function hideModal(){ov.classList.remove('show');ov.innerHTML=''}
+
+function showEventList(kind){
+  const k=KIND_INFO[kind],list=events(kind);
+  const box=el('div','box');box.style.setProperty('--bc',k.bc);
+  box.innerHTML=`<div class="ctitle">${k.icon} ${k.name}　內容一覽</div>
+    <div class="evlist">${list.map(e=>`<div class="evi"><span class="e">${esc(e.icon)}</span><span class="t">${esc(e.text)}</span><span class="a ${e.amt>=0?'pos':'neg'}">${e.amt>=0?'+':''}${e.amt}</span></div>`).join('')}</div>
+    <div class="row-btns"><button class="btn y" id="ok">關閉</button></div>`;
+  showModal(box);Snd.click();
+  box.querySelector('#ok').onclick=()=>{Snd.click();hideModal()};
+}
+
+function questionModal(p,i){
+  return new Promise(res=>{
+    const q=S.cellQ[i];
+    const box=el('div','box qbox');box.style.setProperty('--lvc',LV_HEX[q.lv]);
+    box.innerHTML=`
+      <div class="qhead"><div class="qi">${esc(q.icon)}</div>
+        <div><div class="tag">${'⭐'.repeat(q.lv)}　${q.money} 元</div></div></div>
+      <div class="qtext">${esc(q.q)}</div>
+      <div class="qans hidden" id="ans">${esc(q.a||'（沒有設定答案）')}</div>
+      <div class="row-btns">
+        <button class="btn b" id="rev">👀 看答案</button>
+        <button class="btn g" id="yes">✅ 對了 +${q.money}</button>
+        <button class="btn r" id="no">❌ 錯了</button>
+      </div>`;
+    showModal(box);Snd.flip();
+    const ans=box.querySelector('#ans');
+    box.querySelector('#rev').onclick=()=>{Snd.click();Snd.coin();ans.classList.remove('hidden');ans.classList.add('show')};
+    box.querySelector('#yes').onclick=()=>{
+      hideModal();Snd.win();confetti(160,.5,.45);addMoney(p,q.money);
+      say(`🎉 ${esc(p.name)} 答對了，獲得 ${q.money} 元！`);res();
+    };
+    box.querySelector('#no').onclick=()=>{
+      hideModal();Snd.lose();say(`😅 ${esc(p.name)} 沒有答對，下次加油！`);res();
+    };
+  });
+}
+
+function eventCard(p,corner){
+  return new Promise(res=>{
+    const k=KIND_INFO[corner.kind],list=events(corner.kind),ev=list[rnd(list.length)];
+    const box=el('div','box');box.style.setProperty('--bc',k.c1);
+    box.style.setProperty('--c1',k.c1);box.style.setProperty('--c2',k.c2);box.style.setProperty('--c3',k.c3);
+    box.innerHTML=`<div class="cardWrap">
+      <div class="ctitle">${k.icon} ${esc(p.name)} 抽到「${k.name}」卡！</div>
+      <div class="card" id="card">
+        <div class="back"><div>${k.icon}</div></div>
+        <div class="front"><div class="cico">${esc(ev.icon)}</div><div class="ctxt">${esc(ev.text)}</div>
+          <div class="camt ${ev.amt>=0?'pos':'neg'}">${ev.amt>=0?'+':''}${ev.amt} 元</div></div>
+      </div>
+      <div class="row-btns"><button class="btn y" id="ok" disabled>收下</button></div></div>`;
+    showModal(box);Snd.flip();
+    const card=box.querySelector('#card'),ok=box.querySelector('#ok');
+    setTimeout(()=>{
+      card.classList.add('flip');Snd.flip();
+      setTimeout(()=>{
+        if(ev.amt>=0){Snd.win();confetti(110,.5,.4)}else Snd.lose();
+        addMoney(p,ev.amt);ok.disabled=false;
+        say(`${ev.icon} ${esc(ev.text)}（${ev.amt>=0?'+':''}${ev.amt} 元）`);
+      },750);
+    },700);
+    ok.onclick=()=>{Snd.click();hideModal();res()};
+  });
+}
+
+/* =====================================================================
+   遊戲流程
+   ===================================================================== */
+async function movePlayer(p,n){
+  for(let s=0;s<n;s++){
+    p.pos=(p.pos+1)%TOTAL;
+    const c=S.cells[p.pos];c.classList.add('step');
+    p.tk.classList.remove('hop');void p.tk.offsetWidth;p.tk.classList.add('hop');
+    Snd.step(s);placeTokens();
+    if(p.pos===0){
+      p.money+=PASS_BONUS;renderPlayers();Snd.coin();floatText('經過起點 +'+PASS_BONUS,'#e67700',p.card);
+    }
+    await sleep(270);
+    c.classList.remove('step');
+  }
+}
+async function landOn(p){
+  const i=p.pos,c=S.cells[i];
+  c.classList.add('land');Snd.land();await sleep(1000);c.classList.remove('land');
+  if(CORNERS[i])await eventCard(p,CORNERS[i]);else await questionModal(p,i);
+}
+async function doRoll(){
+  if(S.busy||!S.players.length)return;
+  Snd.init();S.busy=true;setRollBtn();placeTokens();
+  const p=S.players[S.cur],d1=$('#d1'),d2=$('#d2'),n=S.diceN;
+  let again=false;
+  try{
+    say('');
+    Snd.roll();
+    [d1,d2].forEach(d=>{d.classList.remove('pop');d.classList.add('rolling')});
+    let a=1,b=1;const t0=performance.now();
+    while(performance.now()-t0<1100){a=1+rnd(6);b=1+rnd(6);setDie(d1,a);setDie(d2,b);await sleep(85)}
+    [d1,d2].forEach(d=>{d.classList.remove('rolling');d.classList.add('pop')});
+    const total=n===1?a:a+b;
+    again=n===2&&a===b;
+    Snd.coin();
+    say(`${n===1?'':a+' + '+b+' = '}<b style="color:#e63946">${total}</b> 點！前進 ${total} 格${again?'　🎊 兩顆一樣，再擲一次！':''}`);
+    await sleep(700);
+    await movePlayer(p,total);
+    await landOn(p);
+  }catch(e){console.error(e)}
+  S.busy=false;
+  if(again){say(`🎊 ${esc(p.name)} 擲出相同點數，再擲一次！`)}
+  else{S.cur=(S.cur+1)%S.players.length;say('')}
+  renderPlayers();renderTurn();setRollBtn();placeTokens();
+}
+
+/* =====================================================================
+   開始畫面
+   ===================================================================== */
+function readFileText(file){
+  return new Promise((ok,bad)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      let t=new TextDecoder('utf-8').decode(fr.result);
+      if(t.includes('�')){try{t=new TextDecoder('big5').decode(fr.result)}catch(e){}}
+      ok(t);
+    };
+    fr.onerror=bad;fr.readAsArrayBuffer(file);
+  });
+}
+function pickFile(accept,cb){
+  const inp=document.createElement('input');inp.type='file';inp.accept=accept||'.txt,.csv,.tsv,text/plain';
+  inp.onchange=async()=>{if(inp.files[0])cb(await readFileText(inp.files[0]))};inp.click();
+}
+function downloadText(name,text){
+  const blob=new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`}
+
+function qStatus(text){
+  const n=parseQuestions(text).length;
+  if(!n)return `⚠️ 還沒有有效的題目，開始時會使用預設題庫。`;
+  if(n<QCOUNT)return `目前 ${n} 題，不足 ${QCOUNT} 題，開始時會「隨機重複」題目補滿 ${QCOUNT} 題。`;
+  if(n===QCOUNT)return `目前剛好 ${QCOUNT} 題，很棒！`;
+  return `目前 ${n} 題，超過 ${QCOUNT} 題，開始時會取出 ${QCOUNT} 題放上棋盤。`;
+}
+
+function showStart(){
+  const box=el('div','box sbox');box.style.setProperty('--bc','#ff6b6b');
+  let count=S.players.length||S.lastCount;
+  const names=S.players.map(p=>p.name);
+  box.innerHTML=`<h2>🎲 遊戲設定</h2>
+    <div class="prow"><span class="lbl" style="white-space:nowrap">🏷️ 遊戲名稱</span><input class="txt" id="ttl" maxlength="10" placeholder="知識大富翁"></div>
+    <div class="start-grid">
+      <div>
+        <div class="lbl">👥 玩家人數</div>
+        <div class="cnt" id="cnt">${[1,2,3,4,5,6].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div>
+        <div class="lbl" style="margin-top:6px">✏️ 玩家名字</div>
+        <div class="plist" id="plist"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="lbl">📚 題庫</div>
+        <textarea class="big" id="qta" style="height:min(30vh,300px)" spellcheck="false"></textarea>
+        <div class="help">每行一題：題目｜答案｜圖示｜獎金（100~1000）。圖示、獎金可省略，系統會自動判斷。</div>
+        <div class="status" id="qst"></div>
+        <label class="chk"><input type="checkbox" id="shf"><span>隨機打亂題目的順序</span></label>
+        <div class="row-btns" style="margin:0;justify-content:flex-start">
+          <button class="btn p s" id="imp">📂 匯入題庫檔</button>
+          <button class="btn b s" id="def">♻️ 預設題庫</button>
+        </div>
+      </div>
+    </div>
+    <div class="row-btns"><button class="btn g" id="go">🚀 開始遊戲！</button>${S.players.length?'<button class="btn r" id="cancel">取消</button>':''}</div>`;
+  showModal(box);
+  const qta=box.querySelector('#qta'),shf=box.querySelector('#shf');
+  qta.value=S.texts.q;shf.checked=S.shuffle;box.querySelector('#ttl').value=S.title;
+  const upd=()=>box.querySelector('#qst').textContent=qStatus(qta.value);
+  qta.addEventListener('input',upd);upd();
+  const renderNames=()=>{
+    const old=[...box.querySelectorAll('#plist input')].map(i=>i.value);
+    const pl=box.querySelector('#plist');pl.innerHTML='';
+    for(let i=0;i<count;i++){
+      const r=el('div','prow');
+      r.innerHTML=`<div class="av" style="background:${COLORS[i]}">${AVATARS[i]}</div><input class="txt" maxlength="12" placeholder="玩家${i+1}" value="${esc(old[i]!=null?old[i]:(names[i]||''))}">`;
+      pl.append(r);
+    }
+    box.querySelectorAll('#cnt button').forEach(b=>b.classList.toggle('on',+b.dataset.n===count));
+  };
+  renderNames();
+  box.querySelectorAll('#cnt button').forEach(b=>b.onclick=()=>{Snd.init();Snd.click();count=+b.dataset.n;renderNames()});
+  box.querySelector('#imp').onclick=()=>pickFile('',t=>{qta.value=t;upd()});
+  box.querySelector('#def').onclick=()=>{qta.value=DEFAULT_Q;upd()};
+  const cancel=box.querySelector('#cancel');if(cancel)cancel.onclick=hideModal;
+  box.querySelector('#go').onclick=()=>{
+    Snd.init();setTitle(box.querySelector('#ttl').value);
+    const ins=[...box.querySelectorAll('#plist input')];
+    S.texts.q=qta.value;S.shuffle=shf.checked;S.lastCount=count;store.set('dfw_q',S.texts.q);
+    startGame(ins.map((x,i)=>x.value.trim()||('玩家'+(i+1))));
+  };
+}
+
+function startGame(names){
+  S.players.forEach(p=>p.tk&&p.tk.remove());
+  S.players=names.map((n,i)=>({name:n,color:COLORS[i],emoji:AVATARS[i],money:START_MONEY,pos:0,tk:null,card:null}));
+  S.cur=0;S.busy=false;lastMoney.clear();
+  hideModal();applyBank();renderPlayers();renderTurn();setRollBtn();
+  say('');
+  Snd.win();confetti(120,.5,.5);
+  requestAnimationFrame(placeTokens);
+}
+
+/* =====================================================================
+   設定
+   ===================================================================== */
+function showSettings(){
+  const box=el('div','box sbox');box.style.setProperty('--bc','#ffa94d');
+  const tmp={q:S.texts.q,chance:S.texts.chance,fate:S.texts.fate};
+  let tab='q';
+  const TABS=[['q','📚 題庫'],['chance','🍀 機會'],['fate','🔮 命運'],['players','👥 玩家'],['display','🔤 名稱與文字']];
+  const HELP={
+    q:'每行一題：題目｜答案｜圖示｜獎金（100~1000，越難越高）。圖示、獎金可省略。「#」開頭的行會被忽略。',
+    chance:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🧧｜撿到紅包｜200',
+    fate:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🌧️｜忘了帶傘｜-200'
+  };
+  box.innerHTML=`<h2>⚙️ 設定</h2><div class="tabs" id="tabs">${TABS.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('')}</div>
+    <div id="pane" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div class="row-btns" style="margin-top:4px"><button class="btn g" id="save">💾 套用並儲存</button><button class="btn r" id="close">取消</button></div>`;
+  const pane=box.querySelector('#pane');
+  const keep=()=>{const t=pane.querySelector('textarea');if(t&&tab!=='players'&&tab!=='display')tmp[tab]=t.value};
+  function render(){
+    box.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===tab));
+    if(tab==='display'){
+      const cur=document.body.dataset.show||'both';
+      pane.innerHTML='<div class="lbl">🏷️ 遊戲名稱</div><input class="txt" id="ttl2" maxlength="10" placeholder="知識大富翁" value="'+esc(S.title)+'"><div class="help">選擇畫面上文字的顯示方式（立即生效）。</div><div class="plist">'+[['han','只有漢字'],['both','漢字＋拼音'],['py','只有拼音']].map(([v,l])=>`<label class="chk"><input type="radio" name="show" value="${v}" ${v===cur?'checked':''}><span>${l}</span></label>`).join('')+'</div><div class="help">拼音依據：教育部《國語辭典簡編本》（創用CC 姓名標示-禁止改作 3.0 臺灣）。</div>';
+      pane.querySelector('#ttl2').oninput=e=>setTitle(e.target.value);
+      pane.querySelectorAll('input[name=show]').forEach(r=>r.onchange=()=>{setShow(r.value);Snd.click()});
+      return;
+    }
+    if(tab==='players'){
+      if(!S.players.length){pane.innerHTML='<div class="help">遊戲還沒開始，請先按「開始遊戲」。</div>';return}
+      pane.innerHTML=`<div class="help">可以修改名字，也可以直接調整分數。</div><div class="plist" id="pl">${S.players.map((p,i)=>`<div class="prow"><div class="av" style="background:${p.color}">${p.emoji}</div><input class="txt" maxlength="12" value="${esc(p.name)}" data-i="${i}"><input class="txt num" type="number" step="50" value="${p.money}" data-m="${i}"><span class="lbl">元</span></div>`).join('')}</div>`;
+      return;
+    }
+    const n=tab==='q'?parseQuestions(tmp.q).length:parseEvents(tmp[tab],tab).length;
+    pane.innerHTML=`<div class="help">${HELP[tab]}</div>
+      <textarea class="big" spellcheck="false"></textarea>
+      <div class="row-btns" style="margin:0;justify-content:space-between;align-items:center">
+        <div class="status" id="cnt2"></div>
+        <div style="display:flex;gap:10px"><button class="btn p s" id="imp">📂 匯入檔案</button><button class="btn b s" id="exp">⬇️ 匯出</button><button class="btn y s" id="rst">♻️ 還原預設</button></div></div>`;
+    const ta=pane.querySelector('textarea');ta.value=tmp[tab];
+    const info=()=>{pane.querySelector('#cnt2').textContent=tab==='q'?qStatus(ta.value):`共 ${parseEvents(ta.value,tab).length} 個事件`};
+    ta.addEventListener('input',info);info();
+    pane.querySelector('#imp').onclick=()=>pickFile('',t=>{ta.value=t;info()});
+    pane.querySelector('#exp').onclick=()=>downloadText({q:'題庫',chance:'機會',fate:'命運'}[tab]+'_'+stamp()+'.txt',ta.value);
+    pane.querySelector('#rst').onclick=()=>{ta.value={q:DEFAULT_Q,chance:DEFAULT_CHANCE,fate:DEFAULT_FATE}[tab];info()};
+  }
+  box.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{Snd.click();keep();tab=b.dataset.k;render()});
+  render();showModal(box);Snd.init();Snd.click();
+  box.querySelector('#close').onclick=hideModal;
+  box.querySelector('#save').onclick=()=>{
+    keep();
+    const pl=pane.querySelector('#pl');
+    if(pl&&S.players.length){
+      pl.querySelectorAll('input[data-i]').forEach(i=>S.players[+i.dataset.i].name=i.value.trim()||('玩家'+(+i.dataset.i+1)));
+      pl.querySelectorAll('input[data-m]').forEach(i=>S.players[+i.dataset.m].money=Math.max(0,parseInt(i.value,10)||0));
+    }
+    const qChanged=tmp.q!==S.texts.q;
+    S.texts.q=tmp.q;S.texts.chance=tmp.chance;S.texts.fate=tmp.fate;
+    store.set('dfw_q',S.texts.q);store.set('dfw_chance',S.texts.chance);store.set('dfw_fate',S.texts.fate);
+    if(qChanged)applyBank();
+    renderPlayers();renderTurn();hideModal();Snd.win();
+    toast(qChanged?'已儲存，棋盤題目已更新！':'已儲存設定！');
+  };
+}
+
+const DEF_TITLE='知識大富翁';
+function setTitle(t){
+  t=(t||'').trim().slice(0,10)||DEF_TITLE;S.title=t;store.set('dfw_title',t);
+  $('#logoT').textContent=t;$('#gTitle').textContent=t;document.title=t;
+  $('#gTitle').style.setProperty('--ts',Math.min(6.4,38/Math.max(t.length,1)).toFixed(2));
+}
+function setShow(v){document.body.dataset.show=v;store.set('dfw_show',v)}
+/* 下載成績 */
+function downloadScores(){
+  if(!S.players.length){toast('還沒有玩家，請先開始遊戲');return}
+  const rows=S.players.map(p=>({n:p.name,m:p.money})).sort((a,b)=>b.m-a.m);
+  let rank=0,prev=null,t=S.title+'　成績單\r\n時間：'+new Date().toLocaleString('zh-TW')+'\r\n玩家人數：'+rows.length+'\r\n====================\r\n名次\t姓名\t分數（元）\r\n';
+  rows.forEach((r,i)=>{if(r.m!==prev){rank=i+1;prev=r.m}t+=`${rank}\t${r.n}\t${r.m}\r\n`});
+  downloadText('大富翁成績_'+stamp()+'.txt',t);toast('已下載成績單！');Snd.coin();
+}
+
+/* =====================================================================
+   初始化
+   ===================================================================== */
+function init(){
+  // 背景裝飾
+  const deco=$('#bgdeco'),list=['☁️','⭐','🎈','🌟','🍬','🎵','🎲','🌈','🪙','🎁','🦋','🍭'];
+  for(let i=0;i<16;i++){
+    const s=el('span','',list[i%list.length]);
+    s.style.left=(i*37%100)+'%';s.style.top=((i*53+11)%92)+'%';s.style.fontSize=(30+(i*7)%40)+'px';
+    s.style.animationDelay=(-i*0.9)+'s';s.style.animationDuration=(5+i%5)+'s';deco.append(s);
+  }
+  setDie($('#d1'),1);setDie($('#d2'),1);
+  $('#seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(S.busy)return;Snd.init();Snd.click();setDiceMode(+b.dataset.n)});
+  $('#rollBtn').onclick=doRoll;
+  $('#bSet').onclick=()=>{if(!S.busy)showSettings()};
+  $('#bNew').onclick=()=>{if(!S.busy){Snd.init();Snd.click();showStart()}};
+  $('#bDl').onclick=()=>{Snd.init();downloadScores()};
+  $('#bSnd').onclick=()=>{Snd.init();Snd.on=!Snd.on;$('#bSnd').textContent=Snd.on?'🔊 音效':'🔇 靜音';if(Snd.on)Snd.click()};
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!ov.classList.contains('show')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();doRoll()}});
+  setTitle(store.get('dfw_title'));
+  setShow(['han','both','py'].includes(store.get('dfw_show'))?store.get('dfw_show'):'both');
+  applyBank();renderPlayers();renderTurn();setRollBtn();
+  annotate(document.body);obs.observe(document.body,OBS_CFG);
+  if(location.hash.startsWith('#test')){
+    confetti=()=>{};startGame(['小明','小華','美美','大雄']);
+    const h=location.hash;if(h==='#testq')questionModal(S.players[0],5);else if(h==='#teste')eventCard(S.players[0],CORNERS[10]);else if(h==='#testl')showEventList('chance');else if(h==='#tests')showSettings();else if(h==='#testroll')doRoll();
+  }
+  else showStart();
+}
+init();
+</script>
+</body>
+</html>

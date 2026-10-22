@@ -1,0 +1,28 @@
+#bar{position:sticky;top:0;z-index:10;background:#fff8e1;border:2px solid #ffb703;border-radius:10px;padding:8px 10px;margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 3px 8px rgba(0,0,0,.15);font-size:14px}
+#bar button{font:inherit;font-weight:700;border:0;border-radius:8px;padding:5px 12px;cursor:pointer;background:#e7f5ff}
+#bar button.add{background:#ebfbee;color:#2b8a3e;border:2px solid #2f9e44;padding:3px 10px}
+#bar button.go{background:#2f9e44;color:#fff}#bar button.rs{background:#ffe3e3}#bar button.ai{background:#e5dbff}
+#bar input,#bar select{font:inherit;padding:4px 8px;border:2px solid #adb5bd;border-radius:8px}
+#bar .st{font-weight:700;color:#495057}#bar .st b{color:#c92a2a}#bar .st b.o{color:#e67700}
+#bar .warn{color:#c92a2a;font-weight:700}
+#bar .tip{flex-basis:100%;color:#555;font-size:13px;line-height:1.6}
+[contenteditable]{cursor:text;border-radius:4px;outline:1px dashed transparent}
+[contenteditable]:hover{outline-color:#74c0fc;background:#f3f9ff}
+[contenteditable]:focus{outline:2px solid #339af0;background:#fff}
+div.h[contenteditable],div.p[contenteditable]{padding:1px 4px;margin-left:-4px;min-height:1.3em}
+div.p.mod{background:#fff3bf}
+div.p.bad{background:#ffe3e3;outline:1px solid #fa5252}
+div.p.empty:empty::before{content:"（空白：遊戲會自動產生拼音）";color:#adb5bd;font-style:italic}
+tr.new>td:first-child{box-shadow:inset 4px 0 0 #2f9e44}
+td.ic,td.m{min-width:2.2em}
+td.im{width:96px;text-align:center}
+td.im img.thumb{display:block;max-width:84px;max-height:64px;margin:0 auto 4px;border-radius:6px;border:1px solid #ccc;cursor:pointer;object-fit:contain;background:#f1f3f5}
+td.im button,td.op button{font:inherit;font-size:12px;border:0;border-radius:6px;padding:2px 8px;cursor:pointer;background:#e7f5ff}
+td.im button.imx{background:#ffe3e3}
+td.op{width:40px;text-align:center}
+td.op button.del{background:#ffe3e3;font-size:15px}
+p.addp{margin:8px 0 0}
+p.addp button.add{font:inherit;font-weight:700;border:2px dashed #2f9e44;color:#2f9e44;background:#fff;border-radius:10px;padding:6px 16px;cursor:pointer}
+p.addp button.add:hover{background:#ebfbee}
+@media print{#bar,p.addp,td.op{display:none}}
+td.ic:empty::before{content:"自動";color:#adb5bd;font-size:12px}

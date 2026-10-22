@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>知識大富翁</title>
+<script>/*PINYIN_LIB*/</script>
+<script>window.MOE=/*MOE_DATA*/;window.PYT=/*PYT_DATA*/;</script>
+<script>window.BUNDLE=/*BUNDLE_DATA*/;</script>
+<style>
+:root{
+  --hdr:66px;
+  --bs:min(calc(100vh - var(--hdr) - 14px), calc(100vw - 350px));
+  --u:calc(var(--bs) / 100);
+  --ink:#2b2d42;
+  --lv1:#2eb872;--lv2:#2f80ed;--lv3:#8e44ad;--lv4:#e67e22;--lv5:#e63946;
+}
+@media (max-aspect-ratio:1/1){
+  :root{--bs:min(calc(100vw - 16px), calc(100vh - var(--hdr) - 200px));}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(135deg,#bdeaff 0%,#ffe9a8 38%,#ffc9de 70%,#d8c8ff 100%);
+  display:flex;flex-direction:column;height:100vh;line-height:1.55;user-select:none;
+}
+ruby{ruby-align:center;ruby-position:over}
+body[data-show=han] rt{display:none}
+body[data-show=py] ruby{display:inline-block;margin-right:.2em}
+body[data-show=py] .hz{display:none}
+body[data-show=py] .cell.corner .lab{font-size:calc(var(--u)*1.9);white-space:nowrap}
+body[data-show=py] .cell.corner .sub{font-size:calc(var(--u)*1.5)}
+body[data-show=py] .turn,body[data-show=py] .seg button{white-space:nowrap}
+body[data-show=py] rt{display:inline;font-size:1em;opacity:1}
+rt{font-size:.3333em;font-weight:700;line-height:1;letter-spacing:0;opacity:.9;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.4)}
+
+/* ---------- 背景裝飾 ---------- */
+.bgdeco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bgdeco span{position:absolute;opacity:.55;animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-22px) rotate(8deg)}}
+
+/* ---------- 上方列 ---------- */
+header{
+  height:var(--hdr);flex:none;position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  background:linear-gradient(90deg,#ff6b6b,#ffa94d,#ffd43b,#69db7c,#4dabf7,#9775fa);
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+.logo{font-size:30px;font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;padding-top:4px}
+.logo .spin{display:inline-block;animation:wob 2.4s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg) scale(1.15)}}
+.tools{display:flex;gap:10px;padding-top:4px}
+.tbtn{
+  background:#fff;border-radius:999px;padding:2px 16px 4px;font-size:20px;font-weight:800;
+  box-shadow:0 3px 0 rgba(0,0,0,.22);transition:transform .12s;white-space:nowrap
+}
+.tbtn:hover{transform:translateY(-2px) scale(1.04)}
+.tbtn:active{transform:translateY(2px)}
+.tbtn.set{background:#fff3bf}
+
+/* ---------- 主區 ---------- */
+main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:7px 10px;position:relative;z-index:1}
+@media (max-aspect-ratio:1/1){main{flex-direction:column;gap:6px}}
+#boardWrap{width:var(--bs);height:var(--bs);flex:none;position:relative}
+#board{
+  position:absolute;inset:0;display:grid;
+  grid-template-columns:1.5fr repeat(9,1fr) 1.5fr;grid-template-rows:1.5fr repeat(9,1fr) 1.5fr;
+  gap:calc(var(--u)*.45);padding:calc(var(--u)*.7);
+  background:linear-gradient(135deg,#fff,#fff7d6);border-radius:calc(var(--u)*2.5);
+  box-shadow:0 10px 30px rgba(80,40,120,.35),inset 0 0 0 calc(var(--u)*.5) #ffb703;
+}
+
+/* 格子 */
+.cell{
+  position:relative;border-radius:calc(var(--u)*1.2);overflow:hidden;cursor:default;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,hsl(var(--h) 95% 94%),hsl(var(--h) 90% 82%));
+  box-shadow:inset 0 0 0 calc(var(--u)*.22) rgba(255,255,255,.8),0 2px 3px rgba(0,0,0,.18);
+}
+.cell .band{
+  position:absolute;top:0;left:0;right:0;height:calc(var(--u)*2);background:var(--lv);
+  display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*1.25);line-height:1;letter-spacing:-.1em;
+}
+.cell .ico{
+  font-size:calc(var(--u)*5.3);line-height:1;margin-top:calc(var(--u)*-.5);
+  filter:drop-shadow(0 calc(var(--u)*.25) calc(var(--u)*.2) rgba(0,0,0,.3));
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+}
+.cell.corner{cursor:pointer;flex-direction:column;background:linear-gradient(150deg,var(--c1),var(--c2));color:#fff}
+.cell.corner:hover{filter:brightness(1.1)}
+.cell.corner .ico{font-size:calc(var(--u)*6.4);margin:0;animation:bob 1.8s ease-in-out infinite}
+.cell.corner .lab{font-size:calc(var(--u)*2.7);font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.3);line-height:1.5;padding-top:calc(var(--u)*.6)}
+.cell.corner .sub{position:absolute;top:calc(var(--u)*.3);left:0;right:0;text-align:center;font-size:calc(var(--u)*1.9);font-weight:900;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(calc(var(--u)*-.8)) rotate(6deg)}}
+.cell.step{animation:stepPulse .3s}
+@keyframes stepPulse{0%{transform:scale(1)}50%{transform:scale(1.12);filter:brightness(1.25)}100%{transform:scale(1)}}
+.cell.land{animation:landBlink .22s 6 alternate;z-index:4}
+@keyframes landBlink{from{filter:brightness(1);box-shadow:0 0 0 0 #ff0}to{filter:brightness(1.35) saturate(1.5);box-shadow:0 0 0 calc(var(--u)*.8) #ffe600,0 0 calc(var(--u)*3) calc(var(--u)*1) #ff9500;transform:scale(1.14)}}
+
+/* 棋子 */
+#tokens{position:absolute;inset:0;pointer-events:none;z-index:6}
+.token{position:absolute;width:calc(var(--u)*3.3);height:calc(var(--u)*3.3);transition:left .24s ease-in-out,top .24s ease-in-out}
+.token .tk{
+  width:100%;height:100%;border-radius:50%;background:var(--c);border:calc(var(--u)*.3) solid #fff;
+  display:grid;place-items:center;font-size:calc(var(--u)*2.1);line-height:1;
+  box-shadow:0 calc(var(--u)*.3) calc(var(--u)*.5) rgba(0,0,0,.4);
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+}
+.token.cur{z-index:3}
+.token.cur .tk{animation:curRing 1s ease-in-out infinite}
+@keyframes curRing{0%,100%{box-shadow:0 0 0 0 var(--c),0 4px 6px rgba(0,0,0,.4)}50%{box-shadow:0 0 0 calc(var(--u)*.9) rgba(255,255,255,.0),0 0 calc(var(--u)*1.4) calc(var(--u)*.6) var(--c)}}
+.token.hop .tk{animation:hop .24s}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(var(--u)*-2.2)) scale(1.15)}}
+
+/* 中央 */
+#center{
+  grid-area:2/2/11/11;position:relative;overflow:hidden;border-radius:calc(var(--u)*2);
+  background:radial-gradient(circle at 50% 40%,#fffdf0,#d6f1ff 60%,#ffd9ec);
+  display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+  box-shadow:inset 0 0 0 calc(var(--u)*.35) rgba(255,255,255,.9),inset 0 0 calc(var(--u)*3) rgba(120,80,200,.18);
+}
+#center::before{
+  content:"";position:absolute;left:50%;top:50%;width:200%;aspect-ratio:1;translate:-50% -50%;
+  background:repeating-conic-gradient(rgba(255,214,102,.28) 0 10deg,transparent 10deg 20deg);
+  animation:rays 40s linear infinite;pointer-events:none
+}
+@keyframes rays{to{rotate:360deg}}
+#center>*{position:relative}
+.title{
+  font-size:calc(var(--u)*var(--ts,6.4));font-weight:900;line-height:1.5;letter-spacing:.05em;white-space:nowrap;max-width:96%;
+  background:linear-gradient(90deg,#ff4d6d,#ff9f1c,#2eb872,#2f80ed,#8e44ad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 calc(var(--u)*.3) 0 rgba(255,255,255,.9));
+}
+.title ruby rt{color:#6a4c93;-webkit-text-fill-color:#6a4c93}
+.turn{
+  display:flex;align-items:center;gap:calc(var(--u)*1.2);font-size:calc(var(--u)*4.6);font-weight:900;line-height:1.5;
+  background:#fff;border-radius:999px;padding:0 calc(var(--u)*2.6) 0 calc(var(--u)*1);
+  box-shadow:0 calc(var(--u)*.4) 0 var(--tc,#ccc),0 0 0 calc(var(--u)*.35) var(--tc,#ccc);
+}
+.turn .av{width:calc(var(--u)*5.6);height:calc(var(--u)*5.6);border-radius:50%;background:var(--tc,#ccc);display:grid;place-items:center;font-size:calc(var(--u)*3.6);line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif;animation:bob 1.6s ease-in-out infinite}
+.seg{display:flex;background:#fff;border-radius:999px;padding:calc(var(--u)*.5);gap:calc(var(--u)*.4);box-shadow:0 0 0 calc(var(--u)*.3) #ffd166}
+.seg button{
+  font-size:calc(var(--u)*3.6);font-weight:900;line-height:1.5;padding:0 calc(var(--u)*2.4);border-radius:999px;background:transparent;color:#8d6e00;transition:.15s
+}
+.seg button.on{background:linear-gradient(180deg,#ffd43b,#ff922b);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 3px 0 #c76b00}
+.diceRow{display:flex;gap:calc(var(--u)*3);align-items:center;justify-content:center;height:calc(var(--u)*14.5)}
+.die{
+  width:calc(var(--u)*13);height:calc(var(--u)*13);background:linear-gradient(145deg,#fff,#e8e8f0);border-radius:calc(var(--u)*2.4);
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--u)*1.7);
+  box-shadow:0 calc(var(--u)*.7) 0 #b8b8d0,0 calc(var(--u)*1.4) calc(var(--u)*1.6) rgba(0,0,0,.3);
+}
+.die i{border-radius:50%;margin:12%;background:transparent}
+.die i.on{background:radial-gradient(circle at 35% 30%,#ff8fa3,#d90429 70%)}
+.die.one i.on{background:radial-gradient(circle at 35% 30%,#ff8fa3,#d90429 70%)}
+.die.rolling{animation:shake .18s linear infinite}
+.die.rolling+.die{animation-direction:reverse}
+@keyframes shake{0%{transform:rotate(-14deg) translate(-4px,2px)}25%{transform:rotate(10deg) translate(5px,-6px)}50%{transform:rotate(-8deg) translate(-5px,-3px)}75%{transform:rotate(16deg) translate(4px,5px)}100%{transform:rotate(-14deg) translate(-4px,2px)}}
+.die.pop{animation:diePop .5s}
+@keyframes diePop{0%{transform:scale(.6) rotate(-40deg)}60%{transform:scale(1.18) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+.die.hide{display:none}
+#rollBtn{
+  font-size:calc(var(--u)*5.4);font-weight:900;line-height:1.5;color:#fff;padding:0 calc(var(--u)*7);border-radius:999px;
+  background:linear-gradient(180deg,#ff6b6b,#e63946);text-shadow:0 2px 0 rgba(0,0,0,.3);
+  box-shadow:0 calc(var(--u)*.7) 0 #9d0208,0 calc(var(--u)*1.2) calc(var(--u)*1.4) rgba(0,0,0,.3);
+  animation:throb 1.2s ease-in-out infinite;transition:transform .1s;
+}
+#rollBtn:hover:not(:disabled){transform:scale(1.06)}
+#rollBtn:active:not(:disabled){transform:translateY(calc(var(--u)*.6))}
+#rollBtn:disabled{animation:none}
+@keyframes throb{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+#msg{
+  font-size:calc(var(--u)*3.3);font-weight:800;line-height:1.6;text-align:center;min-height:calc(var(--u)*7.4);
+  display:flex;align-items:center;justify-content:center;padding:0 calc(var(--u)*2);max-width:96%;
+  color:#4a3a7a;
+}
+.mascot{position:absolute !important;font-size:calc(var(--u)*6);animation:floaty 5s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+
+/* ---------- 側欄 ---------- */
+aside{
+  width:310px;height:var(--bs);flex:none;display:flex;flex-direction:column;gap:8px;min-height:0;
+  background:rgba(255,255,255,.82);border-radius:22px;padding:10px 12px;box-shadow:0 6px 20px rgba(80,40,120,.25);
+}
+@media (max-aspect-ratio:1/1){aside{width:var(--bs);height:auto;flex:1;min-height:0}}
+aside h3{font-size:clamp(18px,3.1vmin,28px);font-weight:900;line-height:1.7;color:#d6336c;flex:none}
+#players{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px}
+@media (max-aspect-ratio:1/1){#players{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pc{max-height:none;padding:2px 8px}.pc .pn{line-height:1.45}.pc .pm{font-size:clamp(16px,2.6vmin,24px)}aside h3{line-height:1.3}}
+.pc{
+  flex:1 1 0;max-height:92px;min-height:0;display:flex;align-items:center;gap:10px;padding:0 10px;position:relative;
+  background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--c) 18%,#fff));border-radius:16px;border:3px solid color-mix(in srgb,var(--c) 45%,#fff);
+  transition:transform .2s,box-shadow .2s;
+}
+.pc.cur{transform:scale(1.04);border-color:var(--c);box-shadow:0 0 0 3px #fff,0 0 14px 3px var(--c)}
+.pc .av{flex:none;width:clamp(34px,6.4vmin,58px);aspect-ratio:1;border-radius:50%;background:var(--c);display:grid;place-items:center;font-size:clamp(20px,3.8vmin,34px);border:3px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.pc .info{min-width:0;flex:1}
+.pc .pn{font-size:clamp(16px,2.9vmin,26px);font-weight:900;line-height:1.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .pm{font-size:clamp(18px,3.3vmin,30px);font-weight:900;color:#e67700;line-height:1.1}
+.pc .crown{position:absolute;right:6px;top:-12px;font-size:26px;animation:bob 1.4s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.pc.bump .pm{animation:bump .6s}
+@keyframes bump{0%,100%{transform:scale(1)}40%{transform:scale(1.35);color:#2eb872}}
+.legend{flex:none;font-size:clamp(13px,2.1vmin,18px);font-weight:700;line-height:1.7}
+.legend .row{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.legend .chip{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.legend .chip b{display:inline-block;min-width:1.7em;border-radius:6px;background:var(--lv);color:#fff;text-align:center;font-size:.85em;padding:0 2px;line-height:1.35}
+.hint{flex:none;font-size:clamp(13px,2.1vmin,18px);font-weight:700;color:#6a4c93;line-height:1.7}
+
+#players.many{gap:3px}
+#players.many .pc{padding:0 8px;gap:8px;border-width:2px}
+#players.many .pc .av{width:clamp(26px,4.6vmin,40px);font-size:clamp(15px,2.6vmin,24px);border-width:2px}
+#players.many .pc .info{display:flex;align-items:center;justify-content:space-between;gap:6px}
+#players.many .pc .pn{font-size:clamp(14px,2.3vmin,20px);line-height:1.6}
+#players.many .pc .pm{font-size:clamp(15px,2.6vmin,22px)}
+#players.many .pc .crown{font-size:18px;top:-9px}
+.token.small{width:calc(var(--u)*2.6);height:calc(var(--u)*2.6)}
+.token.small .tk{font-size:calc(var(--u)*1.6)}
+/* ---------- 彈窗 ---------- */
+#ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(40,20,80,.55);backdrop-filter:blur(3px)}
+#ov.show{display:flex}
+.box{
+  max-width:96vw;max-height:96vh;overflow:auto;background:linear-gradient(160deg,#fffdf4,#eaf6ff);border-radius:28px;padding:22px 28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 6px #fff,0 0 0 12px var(--bc,#ffb703);animation:boxIn .35s cubic-bezier(.2,1.4,.4,1);
+  line-height:1.8;user-select:text;
+}
+@keyframes boxIn{from{transform:scale(.6) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.btn{
+  font-size:clamp(20px,3.6vmin,32px);font-weight:900;line-height:1.7;padding:0 26px;border-radius:999px;color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 5px 0 rgba(0,0,0,.28);transition:transform .1s;white-space:nowrap
+}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+.btn.g{background:linear-gradient(180deg,#51cf66,#2b8a3e)}
+.btn.r{background:linear-gradient(180deg,#ff8787,#e03131)}
+.btn.b{background:linear-gradient(180deg,#74c0fc,#1971c2)}
+.btn.y{background:linear-gradient(180deg,#ffd43b,#f08c00)}
+.btn.p{background:linear-gradient(180deg,#b197fc,#6741d9)}
+.btn.s{font-size:clamp(16px,2.6vmin,22px);padding:0 16px}
+.row-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+
+/* 題目 */
+.qbox{width:min(1100px,95vw);text-align:center;--bc:var(--lvc)}
+.qhead{display:flex;align-items:center;justify-content:center;gap:18px}
+.qhead .qi{font-size:min(15vmin,130px);line-height:1.1;animation:bob 1.6s ease-in-out infinite;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.qhead .tag{font-size:clamp(20px,3.8vmin,34px);font-weight:900;line-height:1.7;color:#fff;background:var(--lvc);border-radius:999px;padding:0 22px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.qhead .who{font-size:clamp(18px,3.2vmin,28px);font-weight:800;line-height:1.7;color:#6a4c93}
+.qtext{font-size:clamp(28px,6vmin,56px);font-weight:900;line-height:1.9;margin:6px 0 4px;color:#2b2d42}
+.qhead .qi.sm{font-size:min(8vmin,70px)}
+.qimg{display:block;margin:4px auto;max-width:100%;max-height:min(36vh,380px);border-radius:18px;border:5px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:zoom-in;background:#fff}
+.qimg.zoom{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);max-width:94vw;max-height:94vh;z-index:90;cursor:zoom-out;margin:0;border-width:8px}
+.qimgmiss{margin:6px auto;padding:10px 18px;border-radius:16px;background:#ffe3e3;color:#c92a2a;font-size:clamp(16px,2.6vmin,22px);font-weight:800;line-height:1.8;display:inline-block}
+.qtext.sm{font-size:clamp(24px,4.8vmin,46px);line-height:1.8;margin:2px 0}
+.qbox.hasimg .qans{min-height:clamp(46px,8vmin,80px);font-size:clamp(22px,4.2vmin,38px)}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;max-height:min(44vh,420px);overflow:auto;padding:4px}
+.imgc{background:#fff;border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;box-shadow:0 2px 0 rgba(0,0,0,.14)}
+.imgc img{width:100%;height:90px;object-fit:contain;border-radius:8px;background:#f1f3f5}
+.imgc .nm{font-size:14px;font-weight:800;line-height:1.7;word-break:break-all;text-align:center;user-select:text}
+.imgc .bt{display:flex;gap:6px}
+.imgc .bt button{font-size:15px;font-weight:800;border-radius:10px;padding:1px 8px;background:#e7f5ff}
+.imgc .bt button.d{background:#ffe3e3}
+.qans{
+  min-height:clamp(60px,11vmin,110px);display:flex;align-items:center;justify-content:center;margin-top:6px;border-radius:20px;
+  font-size:clamp(24px,5vmin,46px);font-weight:900;line-height:1.9;color:#1b7a3a;background:#dff8e6;border:4px dashed #51cf66;padding:0 18px;
+}
+.qans.hidden{visibility:hidden}
+.qans.show{animation:ansIn .45s}
+@keyframes ansIn{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
+
+/* 機會/命運卡 */
+.cardWrap{perspective:1200px;display:flex;flex-direction:column;align-items:center}
+.card{width:min(560px,86vw);height:min(52vh,420px);position:relative;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,1.3,.5,1)}
+.card.flip{transform:rotateY(180deg)}
+.card>div{position:absolute;inset:0;backface-visibility:hidden;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;box-shadow:inset 0 0 0 8px rgba(255,255,255,.6)}
+.card .back{background:repeating-linear-gradient(45deg,var(--c1),var(--c1) 16px,var(--c2) 16px,var(--c2) 32px);font-size:min(24vmin,200px);color:#fff}
+.card .front{transform:rotateY(180deg);background:linear-gradient(160deg,#fff,var(--c3))}
+.card .cico{font-size:min(17vmin,140px);line-height:1.2;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.card .ctxt{font-size:clamp(24px,5vmin,44px);font-weight:900;line-height:1.9}
+.card .camt{font-size:clamp(34px,8vmin,72px);font-weight:900;line-height:1.2;margin-top:6px}
+.camt.pos{color:#2b8a3e}.camt.neg{color:#e03131}
+.ctitle{font-size:clamp(24px,4.6vmin,42px);font-weight:900;line-height:1.9;margin-bottom:6px;text-align:center}
+
+/* 一覽 */
+.evlist{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;max-height:70vh;overflow:auto;padding:4px}
+.evi{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:4px 14px;font-size:clamp(17px,2.9vmin,26px);font-weight:800;line-height:1.85;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.evi .e{font-size:1.5em;line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.evi .t{flex:1}
+.evi .a{font-weight:900;border-radius:999px;padding:0 12px;color:#fff;line-height:1.5}
+.evi .a.pos{background:#2b8a3e}.evi .a.neg{background:#e03131}
+
+/* 設定 / 開始 */
+.sbox{width:min(1000px,96vw);display:flex;flex-direction:column;gap:8px;max-height:94vh}
+.sbox h2{font-size:clamp(24px,4.4vmin,40px);font-weight:900;line-height:1.9;text-align:center;color:#d6336c}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tabs button{font-size:clamp(17px,2.8vmin,24px);font-weight:900;line-height:1.7;padding:0 18px;border-radius:14px 14px 0 0;background:#e9ecef}
+.tabs button.on{background:#ffd43b;box-shadow:0 -3px 0 #f08c00 inset}
+.help{font-size:clamp(14px,2.2vmin,19px);font-weight:700;line-height:1.85;color:#495057;background:#fff9db;border-radius:12px;padding:2px 12px}
+textarea.big{width:100%;height:min(44vh,430px);resize:none;font:700 clamp(15px,2.4vmin,20px)/1.6 "Microsoft JhengHei",monospace;padding:10px;border-radius:14px;border:3px solid #adb5bd;user-select:text;background:#fff;color:#222}
+textarea.big:focus,input.txt:focus{outline:none;border-color:#4dabf7}
+input.txt{font:800 clamp(17px,2.8vmin,24px) "Microsoft JhengHei",sans-serif;border:3px solid #adb5bd;border-radius:12px;padding:3px 10px;width:100%;user-select:text;background:#fff;color:#222}
+.plist{display:grid;gap:8px}
+.prow{display:flex;gap:10px;align-items:center}
+.plist.tight{gap:4px 10px}.plist.tight .av{width:clamp(28px,4.8vmin,38px);font-size:clamp(16px,2.8vmin,22px);border-width:2px}.plist.tight input.txt{font-size:clamp(15px,2.4vmin,20px);padding:0 8px}
+.prow .av{flex:none;width:clamp(34px,6vmin,52px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(20px,3.6vmin,32px);border:3px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+.prow input.num{width:7.5em;flex:none}
+.start-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px}
+@media (max-aspect-ratio:1/1){.start-grid{grid-template-columns:1fr}}
+.lbl{font-size:clamp(18px,3vmin,26px);font-weight:900;line-height:1.9;color:#1971c2}
+.cnt{display:flex;gap:8px;flex-wrap:wrap}
+.cnt button{width:clamp(44px,7vmin,62px);aspect-ratio:1;border-radius:14px;background:#e9ecef;font-size:clamp(22px,3.8vmin,34px);font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.cnt button.on{background:linear-gradient(180deg,#ffd43b,#f08c00);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.chk{display:flex;align-items:center;gap:8px;font-size:clamp(16px,2.6vmin,22px);font-weight:800;line-height:1.9}
+.chk input{width:1.3em;height:1.3em}
+.status{font-size:clamp(15px,2.4vmin,20px);font-weight:800;line-height:1.9;color:#e8590c}
+
+/* 浮動分數 / 彩帶 */
+.ftext{position:fixed;z-index:70;font-size:44px;font-weight:900;pointer-events:none;text-shadow:0 3px 0 #fff,0 0 12px #fff;animation:fup 1.6s ease-out forwards}
+@keyframes fup{0%{transform:translate(-50%,0) scale(.5);opacity:0}15%{transform:translate(-50%,-10px) scale(1.4);opacity:1}100%{transform:translate(-50%,-110px) scale(1);opacity:0}}
+#fx{position:fixed;inset:0;z-index:60;pointer-events:none}
+.toast{position:fixed;left:50%;top:84px;translate:-50% 0;z-index:80;background:#2b2d42;color:#fff;border-radius:999px;padding:2px 24px;font-size:22px;font-weight:800;line-height:1.9;animation:toast 2.4s forwards;pointer-events:none}
+@keyframes toast{0%{opacity:0;transform:translateY(-14px)}10%,85%{opacity:1;transform:none}100%{opacity:0}}
+</style>
+</head>
+<body>
+<div class="bgdeco" id="bgdeco"></div>
+
+<header>
+  <div class="logo"><span class="spin">🎲</span><span id="logoT">知識大富翁</span></div>
+  <div class="tools">
+    <button class="tbtn" id="bSnd" title="音效">🔊 音效</button>
+    <button class="tbtn" id="bDl">⬇️ 下載成績</button>
+    <button class="tbtn" id="bNew">🔄 重新開始</button>
+    <button class="tbtn set" id="bSet">⚙️ 設定</button>
+  </div>
+</header>
+
+<main>
+  <div id="boardWrap">
+    <div id="board">
+      <div id="center">
+        <span class="mascot" style="left:2%;top:2%">🎈</span>
+        <span class="mascot" style="right:2%;top:2%;animation-delay:-2s">🌈</span>
+        <div class="title" id="gTitle">知識大富翁</div>
+        <div class="turn" id="turn"></div>
+        <div class="seg" id="seg">
+          <button data-n="1" class="on" title="一顆骰子">🎲</button>
+          <button data-n="2" title="兩顆骰子">🎲🎲</button>
+        </div>
+        <div class="diceRow"><div class="die" id="d1"></div><div class="die hide" id="d2"></div></div>
+        <button id="rollBtn" title="擲骰子">👆</button>
+        
+      </div>
+    </div>
+    <div id="tokens"></div>
+  </div>
+
+  <aside>
+    <h3>🏆 計分板</h3>
+    <div id="players"></div>
+  </aside>
+</main>
+
+<div id="ov"></div>
+<canvas id="fx"></canvas>
+
+<script>
+'use strict';
+/* =====================================================================
+   工具
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=n=>Math.floor(Math.random()*n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
+const store={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+};
+/* 圖片庫：匯入的圖片存在瀏覽器的 IndexedDB（換電腦要重新匯入） */
+const IMG={
+  db:null,map:{},pending:[],
+  open(){return new Promise(res=>{try{const r=indexedDB.open('dfw_img',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>{this.db=r.result;this.pending.splice(0).forEach(([n,d])=>this.put(n,d));res(true)};r.onerror=()=>res(false)}catch(e){res(false)}})},
+  async load(){
+    if(!await this.open())return;
+    await new Promise(res=>{
+      try{
+        const rq=this.db.transaction('img').objectStore('img').openCursor();
+        rq.onsuccess=()=>{const c=rq.result;if(c){this.map[c.key]=c.value;c.continue()}else res()};
+        rq.onerror=()=>res();
+      }catch(e){res()}
+    });
+  },
+  put(name,data){
+    this.map[name]=data;
+    if(!this.db){this.pending.push([name,data]);return}
+    try{this.db.transaction('img','readwrite').objectStore('img').put(data,name)}catch(e){}
+  },
+  del(name){
+    delete this.map[name];
+    try{if(this.db)this.db.transaction('img','readwrite').objectStore('img').delete(name)}catch(e){}
+  },
+  names(){return Object.keys(this.map).sort((a,b)=>a.localeCompare(b,'zh-Hant'))},
+  /* 題庫裡填的是網址、data: 或圖庫檔名；找不到圖庫就當成相對路徑 */
+  resolve(ref){
+    if(!ref)return '';
+    if(/^(https?:|data:|blob:)/i.test(ref))return ref;
+    const k=ref.toLowerCase(),base=x=>x.replace(/\.[^.]+$/,'').toLowerCase();
+    const all=Object.assign({},bundleImgs(),this.map); // 內建題庫的圖片永遠找得到
+    for(const n of Object.keys(all))if(n.toLowerCase()===k)return all[n];
+    for(const n of Object.keys(all))if(base(n)===base(ref))return all[n];
+    return ref;
+  }
+};
+const IMG_EXT=/\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?.*)?$/i;
+const looksImg=x=>IMG_EXT.test(x)||/^(https?:|data:image)/i.test(x);
+function fileToData(file){
+  return new Promise((ok,bad)=>{
+    const fr=new FileReader();
+    fr.onerror=bad;
+    fr.onload=()=>{
+      const src=fr.result;
+      if(/svg|gif/.test(file.type)){ok(src);return}
+      const im=new Image();
+      im.onerror=bad;
+      im.onload=()=>{
+        const sc=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(im.width*sc));c.height=Math.max(1,Math.round(im.height*sc));
+        const x=c.getContext('2d'),png=file.type==='image/png';
+        if(!png){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
+        x.drawImage(im,0,0,c.width,c.height);
+        ok(c.toDataURL(png?'image/png':'image/jpeg',.88));
+      };
+      im.src=src;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function importImages(files){
+  let n=0;
+  for(const f of files){
+    if(!/^image\//.test(f.type)&&!IMG_EXT.test(f.name))continue;
+    try{IMG.put(f.name,await fileToData(f));n++}catch(e){}
+  }
+  return n;
+}
+function pickImages(cb){
+  const inp=document.createElement('input');inp.type='file';inp.multiple=true;inp.accept='image/*';
+  inp.onchange=async()=>{cb(await importImages([...inp.files]))};inp.click();
+}
+const EMOJI_FONT='"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji"';
+
+/* =====================================================================
+   漢語拼音：自動替所有漢字加上拼音（ruby），拼音大小 = 漢字的 1/3
+   ===================================================================== */
+const CJK=/[㐀-鿿豈-﫿]+/g;
+const CJK_TEST=/[㐀-鿿豈-﫿]/;
+/*PYENGINE_START*/
+/* 拼音以教育部《國語辭典簡編本》為準：先比對詞條（最長詞優先），沒有詞條的字用該字的簡編本讀音，
+   多音字再參考 pinyin-pro 依語境挑出簡編本收錄的讀音。 */
+const MOE_MAXL=9;
+/* 老師指定的讀法（優先於辭典詞條） */
+const PY_OVR={'謝謝':'xiè xie','東西':'dōng xi','一個':'yí ge','一共':'yí gòng','請假':'qǐng jià'};
+const toneOf=y=>/[àèìòùǜ]/.test(y)?4:/[áéíóúǘ]/.test(y)?2:/[ǎěǐǒǔǚ]/.test(y)?3:/[āēīōūǖ]/.test(y)?1:0;
+/* 「一」「不」變調：後字四聲（輕聲則看該字本調）→ yí / bú，其餘 yì / bù；句尾、序數、日期仍念 yī */
+const YI_KEEP_PREV='第十二三四五六七八九百千萬零星期週周統唯之同';
+const YI_KEEP_NEXT='一二三四五六七八九十月日號';
+function sandhi(s,out,M){
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];if(ch!=='一'&&ch!=='不')continue;
+    const n=i+1;if(n>=s.length||!CJK_TEST.test(s[n]))continue;
+    let t=s[n]==='不'?4:s[n]==='一'?1:toneOf(out[n]||'');
+    if(!t&&s[n]==='個')t=4;
+    if(!t){const rs=M.c[s[n]]||[];const r=rs.find(x=>toneOf(x));t=r?toneOf(r):0}
+    if(ch==='一'){
+      if(i>0&&YI_KEEP_PREV.includes(s[i-1]))continue;
+      if(YI_KEEP_NEXT.includes(s[n]))continue;
+      out[i]=t===4?'yí':'yì';
+    }else out[i]=t===4?'bú':'bù';
+  }
+}
+const noTone=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ü/g,'v');
+function pyArr(s){
+  s=s.replace(/台/g,'臺').replace(/裏/g,'裡'); // 簡編本的「台」是另一個字（yí），日常寫法的「台」視為「臺」
+  let lib=[];
+  try{lib=window.pinyinPro.pinyin(s,{type:'array'})}catch(e){}
+  const M=window.MOE||{w:{},c:{}},out=new Array(s.length);
+  let i=0;
+  while(i<s.length){
+    let hit=false;
+    for(let L=Math.min(MOE_MAXL,s.length-i);L>=2&&!hit;L--){
+      const sub=s.substr(i,L),py=PY_OVR[sub]||M.w[sub];
+      if(py){py.split(' ').forEach((x,k)=>out[i+k]=x);i+=L;hit=true}
+    }
+    if(hit)continue;
+    const rs=M.c[s[i]],r=lib[i]||'';
+    if(s[i]==='和'){out[i]='hàn';i++;continue}
+    if(s[i]==='幾'){out[i]='jǐ';i++;continue}
+    if(s[i]==='個'){out[i]='ge';i++;continue}
+    if(s[i]==='了'&&!(i>0&&'不得'.includes(s[i-1]))){out[i]='le';i++;continue}
+    out[i]=rs&&rs.length?(s.length===1?rs[0]:rs.includes(r)?r:(rs.find(x=>noTone(x)===noTone(r))||rs[0])):r;
+    i++;
+  }
+  for(let k=1;k<s.length;k++)if(s[k]==='個'&&'一二兩三四五六七八九十百千萬幾每哪這那整某半'.includes(s[k-1]))out[k]='ge';
+  sandhi(s,out,M);
+  return out;
+}
+/*PYENGINE_END*/
+function rubyFrag(text){
+  const frag=document.createDocumentFragment();let last=0,m;
+  let all=null;
+  const key=text.trim(),tbl=(window.PYTU&&window.PYTU[key])||(window.PYT&&window.PYT[key]); // 「拼音對照表」整句優先（匯入的表格優先於內建的）
+  if(tbl){
+    const syl=tbl.split(' '),n=[...text].filter(c=>CJK_TEST.test(c)).length;
+    if(syl.length===n){all=new Array(text.length);let k=0;for(let q=0;q<text.length;q++)if(CJK_TEST.test(text[q]))all[q]=syl[k++]}
+  }
+  if(!all)all=pyArr(text);
+  CJK.lastIndex=0;
+  while((m=CJK.exec(text))){
+    if(m.index>last)frag.append(text.slice(last,m.index));
+    const run=m[0],py=all.slice(m.index,m.index+run.length);
+    for(let i=0;i<run.length;i++){
+      const r=document.createElement('ruby');const hz=document.createElement('span');hz.className='hz';hz.textContent=run[i];r.append(hz);
+      const rt=document.createElement('rt');rt.textContent=py[i]||'';r.append(rt);frag.append(r);
+    }
+    last=m.index+run.length;
+  }
+  if(last<text.length)frag.append(text.slice(last));
+  return frag;
+}
+const SKIP='ruby,rt,textarea,input,script,style,option,title,[data-nopy]';
+function annotate(node){
+  if(!node||!node.isConnected)return;
+  const texts=[];
+  if(node.nodeType===3)texts.push(node);
+  else if(node.nodeType===1){
+    const w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);let t;
+    while((t=w.nextNode()))texts.push(t);
+  }
+  texts.forEach(t=>{
+    if(!t.isConnected||!CJK_TEST.test(t.nodeValue))return;
+    const p=t.parentElement;if(!p||p.closest(SKIP))return;
+    t.replaceWith(rubyFrag(t.nodeValue));
+  });
+}
+const OBS_CFG={childList:true,subtree:true,characterData:true};
+const obs=new MutationObserver(recs=>{
+  const set=new Set();
+  recs.forEach(r=>{if(r.type==='characterData')set.add(r.target);else r.addedNodes.forEach(n=>set.add(n))});
+  obs.disconnect();
+  set.forEach(annotate);
+  obs.observe(document.body,OBS_CFG);
+});
+
+/* =====================================================================
+   音效（Web Audio API 即時合成，不需外部檔案）
+   ===================================================================== */
+const Snd={
+  ctx:null,master:null,on:true,
+  init(){
+    try{
+      if(!this.ctx){
+        const AC=window.AudioContext||window.webkitAudioContext;
+        this.ctx=new AC();this.master=this.ctx.createGain();this.master.gain.value=.65;this.master.connect(this.ctx.destination);
+      }
+      if(this.ctx.state==='suspended')this.ctx.resume();
+    }catch(e){}
+  },
+  ok(){return this.on&&this.ctx},
+  tone(f,d,o={}){
+    if(!this.ok())return;
+    const {t=0,type='sine',v=.25,to=null}=o,c=this.ctx,t0=c.currentTime+t;
+    const osc=c.createOscillator(),g=c.createGain();
+    osc.type=type;osc.frequency.setValueAtTime(f,t0);
+    if(to)osc.frequency.exponentialRampToValueAtTime(to,t0+d);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v,t0+.015);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    osc.connect(g);g.connect(this.master);osc.start(t0);osc.stop(t0+d+.05);
+  },
+  noise(d,o={}){
+    if(!this.ok())return;
+    const {t=0,v=.3,f=1800,q=1}=o,c=this.ctx,t0=c.currentTime+t;
+    const len=Math.max(1,Math.floor(c.sampleRate*d)),buf=c.createBuffer(1,len,c.sampleRate),data=buf.getChannelData(0);
+    for(let i=0;i<len;i++)data[i]=Math.random()*2-1;
+    const src=c.createBufferSource();src.buffer=buf;
+    const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=q;
+    const g=c.createGain();g.gain.setValueAtTime(v,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    src.connect(bp);bp.connect(g);g.connect(this.master);src.start(t0);
+  },
+  roll(){for(let i=0;i<15;i++){const t=i*.065+i*i*.0035;this.noise(.05,{t,v:.4,f:900+Math.random()*2600,q:3});this.tone(170+Math.random()*140,.05,{t,type:'square',v:.05})}},
+  step(i=0){this.tone(460+(i%10)*38,.13,{type:'triangle',v:.3,to:700+(i%10)*38})},
+  land(){this.tone(330,.16,{v:.3});this.tone(660,.25,{t:.09,v:.3})},
+  flip(){this.noise(.3,{v:.22,f:3200,q:.7});this.tone(380,.28,{to:950,v:.12})},
+  coin(){this.tone(988,.08,{type:'square',v:.14});this.tone(1319,.4,{t:.08,type:'square',v:.14})},
+  win(){[523,659,784,1047,1319].forEach((f,i)=>this.tone(f,.24,{t:i*.1,type:'triangle',v:.3}));this.tone(1047,.7,{t:.5,v:.16});this.coin()},
+  lose(){[392,349,311,262].forEach((f,i)=>this.tone(f,.3,{t:i*.17,type:'sawtooth',v:.14}))},
+  click(){this.tone(720,.06,{type:'square',v:.1})}
+};
+
+/* =====================================================================
+   預設資料
+   ===================================================================== */
+const DEFAULT_Q=`# 格式：題目|答案|圖示|金額（100~1000）
+# 範圍：講義 L1~L24（金額越高，題目越難）
+# 100~200：單字、基本問候　300~500：句型填空、短句翻譯　600~1000：長句翻譯、句子排序
+
+# ===== 第1~2課 發音與打招呼 =====
+「Xin chào」的中文怎麼說？|你好|👋|100
+早上見面，要說什麼？|早安|🌅|100
+中午見面，要說什麼？|午安|☀️|100
+睡覺以前，要說什麼？|晚安|🌙|100
+「Cảm ơn」的中文怎麼說？|謝謝|🙏|100
+別人對你說「謝謝」，你可以說什麼？|不客氣|😊|100
+你做錯事了，要說什麼？|對不起|🙇|100
+別人對你說「對不起」，你可以說什麼？|沒關係|👌|100
+「Tạm biệt」的中文怎麼說？|再見|👋|100
+明天還會見面，離開的時候可以說什麼？|明天見|👋|100
+「謝謝」的拼音怎麼念？|xiè xie|🙏|100
+「不客氣」的拼音怎麼念？|bú kè qì|😊|200
+
+# ===== 第3課 自我介紹 =====
+「Cho hỏi」的中文怎麼說？|請問|❓|100
+填空：我＿天明。（我的名字是天明）|叫|🙋|100
+別人問你：「請問你叫什麼名字？」你要怎麼回答？|我叫＿＿。（例：我叫天明。）|🙋|100
+別人問你：「請問你是哪國人？」你是越南人，要怎麼回答？|我是越南人。|🌏|100
+「哪國」是什麼意思？|nước nào|🌏|100
+「Rất vui được gặp bạn」的中文怎麼說？|很高興認識你|🤝|200
+A說：「我是越南人。你呢？」B也是越南人，B要怎麼回答？|我也是越南人。|🤝|200
+「你呢？」是什麼意思？|Còn bạn thì sao?|💬|200
+「Tên」的中文怎麼說？|名字|📛|100
+「是」的越南語是什麼？|là|✅|100
+
+# ===== 第4課 公司 =====
+「Công ty」的中文怎麼說？|公司|🏢|100
+「Thang máy」的中文怎麼說？|電梯|🛗|100
+「Làm việc」的中文怎麼說？|工作|💼|100
+填空：我＿台灣工作。（ở）|在|🏝️|100
+填空：我＿公司在桃園。（của）|的|🏭|200
+別人問你：「你在哪裡工作？」你在日立永大工作，要怎麼回答？|我在日立永大工作。|🏢|200
+「你的公司在哪裡？」你的公司在桃園，要怎麼回答？|我的公司在桃園。|📍|200
+「我在台中學中文」是什麼意思？|Tôi học tiếng Trung ở Đài Trung.|📘|300
+「電梯」的拼音怎麼念？|diàn tī|🛗|200
+「工作」的拼音怎麼念？|gōng zuò|💼|200
+
+# ===== 第5課 電話與工號 =====
+「100」中文怎麼說？|一百|💯|100
+「20」中文怎麼說？|二十|2️⃣|100
+「15」中文怎麼說？|十五|🔢|100
+「90」中文怎麼說？|九十|🔢|100
+「七」的拼音怎麼念？|qī|7️⃣|100
+「63」中文怎麼說？|六十三|🔢|200
+「請問你的工號是＿號？」填空（mấy）|幾|🪪|100
+「電話號碼」是什麼意思？|số điện thoại|☎️|100
+「知道」的拼音怎麼念？|zhī dào|💡|200
+「我知道了」是什麼意思？|Tôi biết rồi.|💡|200
+工號「76981」要怎麼念？|七六九八一|🪪|300
+電話「0912-345-678」的前四個數字怎麼念？|零九一二|📱|300
+
+# ===== 第6課 數字與量詞 =====
+「您」和「你」，哪一個比較有禮貌？|您|🎩|100
+「地點」是什麼意思？|địa điểm|📍|100
+「安裝」是什麼意思？|lắp đặt|🔩|100
+填空：我的公司有五＿樓。（tầng）|層|🏢|200
+「我家有三樓」是什麼意思？|Nhà tôi có ba tầng.|🏠|200
+量詞「台」用在什麼東西前面？|機器、電梯（máy móc / thang máy）|🛗|300
+「2台電梯」要說「二台」還是「兩台」？|兩台|2️⃣|300
+「Tôi muốn lắp đặt hai thang máy」的中文怎麼說？|我要安裝兩台電梯。|🛗|400
+「我要去公司工作」的「要」是什麼意思？|sẽ（我會去公司工作）|🏢|300
+
+# ===== 第7課 主管 =====
+「經理」是什麼意思？|quản lý / giám đốc|👔|100
+「課長」是什麼意思？|trưởng bộ phận / trưởng phòng|👔|200
+「安裝人員」是什麼意思？|nhân viên lắp đặt|👷|200
+「請多多指教」是什麼意思？|Mong được chỉ dẫn thêm.|🙇|300
+「他等一下會跟你介紹公司」的「跟」是什麼意思？|với / cho|🤝|300
+「跟我走吧」是什麼意思？|Đi theo tôi nhé.|🚶|300
+「我們一起去吃飯吧」的「吧」表示什麼？|nhé / đi（邀請、建議）|🍚|300
+「新來」是什麼意思？|mới đến / mới vào|🆕|200
+
+# ===== 第8課 同事與主管 =====
+「組長」是什麼意思？|tổ trưởng|👔|100
+「主管」是什麼意思？|cấp trên / quản lý|👔|200
+「資料」是什麼意思？|tài liệu / thông tin|📄|100
+「告訴」是什麼意思？|nói cho biết / bảo|🗣️|200
+「隨時」是什麼意思？|bất cứ lúc nào|⏰|200
+「要是」是什麼意思？|nếu|❔|200
+填空：你＿跟我去拿資料，＿跟同事一起去安裝電梯。|先；再|📄|400
+「要是有問題，隨時來問我」是什麼意思？|Nếu có vấn đề, cứ đến hỏi tôi bất cứ lúc nào.|🙋|500
+「Tôi đi tìm Tổ trưởng Lại trước, rồi đi tìm Trưởng bộ phận Hồng」的中文怎麼說？|我先去找賴組長，再去找洪課長。|🔎|700
+「Nếu muốn lắp đặt thang máy, xin hãy gọi điện cho tôi」的中文怎麼說？|要是要安裝電梯，請打電話給我。|📞|900
+
+# ===== 第9課 日期 =====
+「Hôm qua」的中文怎麼說？|昨天|📅|100
+「明年」是什麼意思？|năm sau|📅|100
+星期一還可以怎麼說？|禮拜一|📅|100
+今天是星期五，明天是星期幾？|星期六|📅|100
+「放假」是什麼意思？|được nghỉ / ngày lễ|🏖️|100
+今年是2026年，去年是幾年？|2025年|📅|200
+這個月是七月，下個月是幾月？|八月|🗓️|200
+這個月是七月，上個月是幾月？|六月|🗓️|200
+今年是民國115年，明年是民國幾年？|民國116年|📅|300
+今天是7月31日，明天是幾月幾號？|8月1號|📅|300
+「十二月」的拼音怎麼念？|shí èr yuè|🗓️|200
+別人問你：「你的生日是幾月幾號？」你要怎麼回答？|我的生日是＿月＿號。|🎂|200
+「星期日」還可以怎麼說？|星期天、禮拜天、禮拜日|📅|300
+「這個禮拜天放假」是什麼意思？|Chủ nhật tuần này được nghỉ.|🏖️|300
+「下個星期一」是什麼意思？|thứ Hai tuần sau|📅|300
+「上個禮拜三」是什麼意思？|thứ Tư tuần trước|📅|300
+民國115年是西元幾年？|西元2026年|📅|400
+西元2024年是民國幾年？|民國113年|📅|500
+
+# ===== 第10課 時間 =====
+「Tan làm」的中文怎麼說？|下班|🏁|100
+「Đi ngủ」的中文怎麼說？|睡覺|😴|100
+「下課」是什麼意思？|tan học / hết giờ học|🔔|100
+「誰」是什麼意思？|ai|❓|100
+「2:00」中文怎麼說？|兩點（鐘）|⏰|200
+填空：我晚上10點＿＿。（đi ngủ）|睡覺|😴|200
+「早上、中午、下午、晚上」，哪一個是18:00以後？|晚上|🌃|200
+「5:30」有哪兩種說法？|五點三十分／五點半|⏰|300
+「6:45」中文怎麼說？|六點四十五分|⏰|300
+「下午兩點」是24小時制的幾點？|14:00|🕑|400
+「晚上9點」是24小時制的幾點？|21:00|🌃|400
+別人問你：「你幾點上班？」你早上8點上班，要怎麼回答？|我早上8點上班。|⏰|300
+文雄每天早上幾點上班？|7點|⏰|300
+文雄中午幾點吃午飯？|11點|🍱|300
+文雄下午幾點下班？|5點|🏁|300
+別人問你：「你下午5點做什麼？」你要上課，要怎麼回答？|我下午5點上課。|📘|400
+「Chúng tôi ăn trưa lúc 12 giờ trưa」的中文怎麼說？|我們中午12點吃午飯。|🍱|500
+
+# ===== 第11課 我的工作 =====
+「Thích」的中文怎麼說？|喜歡|❤️|100
+「忙、累、難」是什麼意思？|bận / mệt / khó|😵|200
+「好久不見」是什麼意思？|Lâu rồi không gặp.|🤝|200
+「Tuyệt quá!」的中文怎麼說？|太好了|🎉|200
+「Tôi làm việc ở Đài Loan」的中文怎麼說？|我在台灣工作。|🏝️|200
+「中文難不難？」如果你覺得不難，要怎麼回答？|中文不難。|📘|200
+「我的工作是安裝電梯」是什麼意思？|Công việc của tôi là lắp đặt thang máy.|🛗|300
+別人問你：「你的工作是什麼？」你的工作是修理電梯，要怎麼回答？|我的工作是修理電梯。|🔧|300
+「今天中午太熱了」的「太…了」表示什麼？|quá…（程度很高）|🥵|300
+「Tôi thích công việc của mình」的中文怎麼說？|我喜歡我的工作。|💖|300
+「他們在哪裡做什麼？」看圖：公園、跑步。要怎麼回答？|他們在公園跑步。|🏃|400
+「Tôi thấy công việc của tôi rất tốt」的中文怎麼說？|我覺得我的工作很好。|👍|400
+
+# ===== 第12課 我去上班了 =====
+「Họp」的中文怎麼說？|開會|👥|100
+「打卡」是什麼意思？|quẹt thẻ / chấm công|🪪|200
+「還沒」是什麼意思？|chưa|⏳|200
+「老闆來了」是什麼意思？|Sếp đến rồi.|👔|200
+「他沒來」是什麼意思？|Anh ấy không đến.|🚫|200
+生病的時候要戴什麼？|口罩|😷|200
+很累的時候要做什麼？|休息|🛋️|200
+「他去上班了」的「了」表示什麼？|動作已經完成（đã … rồi）|✅|300
+別人問你：「你吃飯了嗎？」你還沒吃，要怎麼回答？|我還沒吃飯。|🍚|300
+「Tôi phải tăng ca」的中文怎麼說？|我要加班。|🌙|300
+離開工廠的時候，要記得做什麼？|鎖門|🔒|300
+「要」和「不用」意思一樣嗎？|不一樣：「要」＝phải / cần；「不用」＝không phải / không cần|🔄|300
+「我星期六不用上班」是什麼意思？|Thứ Bảy tôi không phải đi làm.|🛌|400
+填空：我上班＿＿＿要打卡，下班＿＿＿也要打卡。|的時候|🪪|400
+
+# ===== 第13課 工具 =====
+「Cờ lê」的中文怎麼說？|扳手|🔧|100
+「Linh kiện」的中文怎麼說？|零件|⚙️|200
+「Chụp ảnh」的中文怎麼說？|拍照|📷|100
+「手套」是什麼意思？|găng tay|🧤|100
+「獎金」是什麼意思？|tiền thưởng|💵|200
+「保養」是什麼意思？|bảo dưỡng|🛠️|200
+填空：我＿筷子吃飯。（bằng / dùng）|用|🥢|200
+填空：請你＿我檢查零件。（giúp）|幫|⚙️|300
+「老闆給我獎金」是什麼意思？|Sếp thưởng tiền cho tôi.|💵|300
+「Để tôi dịch cho bạn」的中文怎麼說？|我幫你翻譯。|🗣️|400
+「請你幫我拿扳手」是什麼意思？|Lấy hộ tôi cái cờ lê với.|🔧|400
+「朋友給我生日禮物」是什麼意思？|Bạn tôi tặng quà sinh nhật cho tôi.|🎁|400
+「我用中文跟經理說話」是什麼意思？|Tôi nói chuyện với quản lý bằng tiếng Trung.|🗣️|500
+「請幫我用手機拍照」是什麼意思？|Vui lòng giúp tôi dùng điện thoại chụp ảnh.|📷|500
+「我用螺絲起子鎖螺絲」是什麼意思？|Tôi dùng tua vít để vặn ốc vít.|🪛|400
+
+# ===== 第14課 電梯壞了 =====
+「Khách hàng」的中文怎麼說？|客戶|🧑‍💼|100
+「檢查」是什麼意思？|kiểm tra|✅|200
+「按鈕」是什麼意思？|nút bấm|🔘|200
+「電扶梯」是什麼意思？|thang cuốn|🎢|200
+「我生病了」是什麼意思？|Tôi bị ốm rồi.|🤒|200
+「電梯壞了」是什麼意思？|Thang máy hỏng rồi.|🛗|200
+「維修人員」是什麼意思？|nhân viên bảo trì|👷|200
+別人問你：「電梯壞了嗎？」電梯沒有壞，要怎麼回答？|電梯沒壞。|🛗|300
+別人問你：「你怎麼了？」你受傷了，要怎麼回答？|我受傷了。|🤕|300
+「你瘦了」是什麼意思？|Bạn gầy đi rồi.|💪|300
+填空：工作的時候，不＿＿抽菸。（không được）|可以|🚭|300
+「Anh ấy đang làm việc」的中文怎麼說？|他在工作。|💼|300
+「天氣變熱了」的「變…了」表示什麼？|trở nên …（情況改變了）|🌡️|400
+「我在檢查按鈕」的「在」是什麼意思？|đang（動作正在進行）|🔘|400
+「休息的時候，可以玩手機」是什麼意思？|Trong lúc nghỉ ngơi thì có thể chơi điện thoại.|📱|400
+「保養電梯的時候，不可以搭電梯」是什麼意思？|Khi bảo dưỡng thang máy không được đi thang máy.|⛔|500
+「Tiền nhiều lên rồi」的中文怎麼說？|錢變多了。|💰|500
+
+# ===== 第15課 請問會議室在哪裡？ =====
+「Bệnh viện」的中文怎麼說？|醫院|🏥|100
+「超級市場」是什麼意思？|siêu thị|🛒|200
+「餐廳」是什麼意思？|nhà hàng / quán ăn|🍜|200
+「會議室」是什麼意思？|phòng họp|🪑|200
+「外面」的相反是什麼？|裡面|↔️|200
+「前面」的相反是什麼？|後面|↔️|200
+「左邊」的相反是什麼？|右邊|↔️|200
+「上面」的相反是什麼？|下面|↔️|200
+「我住在宿舍」是什麼意思？|Tôi sống ở ký túc xá.|🏠|300
+「教室在二樓」是什麼意思？|Lớp học ở tầng hai.|🏫|300
+「廁所在辦公室外面」是什麼意思？|Nhà vệ sinh ở bên ngoài văn phòng.|🚻|300
+「Nhà vệ sinh ở đâu?」的中文怎麼問？|請問廁所在哪裡？|🚻|300
+別人問你：「這裡是哪裡？」這裡是工地，要怎麼回答？|這裡是工地。|🏗️|300
+填空：這裡有桌子、椅子＿電腦。（và）|和|🖥️|300
+「Phòng họp ở tầng ba」的中文怎麼說？|會議室在三樓。|🪑|400
+工廠附近的餐廳在哪裡？（依課文）|餐廳在超級市場後面。|🍜|500
+「請問您是哪位？」是什麼意思？|Xin hỏi anh/chị là ai ạ?|🙋|500
+
+# ===== 第16課 請問銀行怎麼走？ =====
+「Ngân hàng」的中文怎麼說？|銀行|🏦|100
+「右轉」是什麼意思？|rẽ phải|↪️|200
+「往前走」是什麼意思？|đi thẳng về phía trước|⬆️|200
+「一直走」是什麼意思？|cứ đi thẳng|⬆️|200
+「停車場」是什麼意思？|bãi đỗ xe|🅿️|200
+「高鐵站」是什麼意思？|ga tàu cao tốc|🚄|200
+「月台」是什麼意思？|sân ga|🚉|200
+「捷運」是什麼意思？|tàu điện（ngầm）|🚇|300
+「北上」是什麼意思？|đi hướng Bắc|🧭|300
+「請問銀行怎麼走？」是什麼意思？|Xin hỏi ngân hàng đi như thế nào ạ?|🏦|300
+填空：我＿我家騎摩托車＿工廠。（từ … đến）|從；到|🏍️|400
+去高鐵站要怎麼走？（依課文）|搭捷運到高鐵站|🚇|400
+「往前一直走，然後右轉，你的左邊就是停車場」，停車場在哪一邊？|左邊|🅿️|500
+「他從菲律賓搭飛機到台灣」是什麼意思？|Anh ấy đi máy bay từ Phi-líp-pin đến Đài Loan.|✈️|500
+「騎」和「搭」，哪一個用在摩托車？|騎（騎摩托車；火車、飛機、捷運用「搭」）|🏍️|500
+「搭電扶梯往下走就到了」是什麼意思？|Đi thang cuốn xuống dưới là tới rồi.|🎢|500
+「Bạn đi tàu hỏa từ Đài Trung đến Đài Bắc」的中文怎麼說？|你從台中搭火車到台北。|🚆|600
+「Từ đây đi thẳng về phía trước là đến ga tàu hỏa rồi」的中文怎麼說？|從這裡往前走，就到火車站了。|🚉|700
+
+# ===== 第17課 我要一碗滷肉飯 =====
+「飲料」是什麼意思？|đồ uống|🥤|100
+「吸管」是什麼意思？|ống hút|🥤|100
+「無糖」是什麼意思？|không đường|🚫|200
+「大杯」是什麼意思？|cỡ lớn / ly lớn|🥤|200
+「請稍等」是什麼意思？|Xin đợi một chút.|⏳|200
+填空：我要一＿＿滷肉飯。（tô）|碗|🍚|200
+填空：我要一＿＿雞排。（phần）|份|🍗|200
+填空：我要一＿＿可樂。（ly）|杯|🥤|200
+填空：我要十＿＿水餃。（viên / hạt）|顆|🥟|300
+填空：你要飯＿＿＿麵？（hay là）|還是|🍜|300
+別人問你：「你要冰的還是熱的？」你要冰的，要怎麼回答？|我要冰的。|🧊|300
+「甜度跟冰塊？」是在問什麼？|độ ngọt và đá|🧋|300
+「半糖、去冰」是什麼意思？|nửa đường、không đá|🧋|400
+「Tôi muốn hai ly cà phê Mỹ」的中文怎麼說？|我要兩杯美式咖啡。|☕|500
+「Tôi muốn một ly latte, không đường, cảm ơn」的中文怎麼說？|我要一杯拿鐵，無糖，謝謝。|☕|700
+
+# ===== 第18課 請問一共多少錢？ =====
+「學生」是什麼意思？|học sinh / sinh viên|🧑‍🎓|100
+「一共」是什麼意思？|tổng cộng|➕|200
+填空：這＿＿衣服很好看。（chiếc / cái）|件|👕|200
+填空：這＿＿鞋子很貴。（đôi）|雙|👟|200
+「試穿」是什麼意思？|mặc thử|👗|200
+「試衣間」是什麼意思？|phòng thử đồ|🚪|200
+「信用卡、行動支付、現金」都是什麼？|付款方式（thẻ tín dụng、thanh toán di động、tiền mặt）|💳|300
+「這裡有多少人？」是什麼意思？|Ở đây có bao nhiêu người?|👥|300
+「Một cái bánh bao bao nhiêu tiền?」的中文怎麼說？|一個包子多少錢？|🥟|300
+「可以試穿嗎？」是什麼意思？|Có thể mặc thử không?|👗|300
+店員說「歡迎下次光臨」，是什麼意思？|Hẹn gặp lại lần sau.|🏪|300
+一個包子30元，買三個，一共多少錢？|90元|💰|400
+這件衣服500元，這件褲子300元，一共多少錢？|800元|👔|400
+三個三明治一共180元，一個多少錢？|60元|🥪|500
+「我要用現金付款」是什麼意思？|Tôi muốn thanh toán bằng tiền mặt.|💵|500
+
+# ===== 第19課 今天天氣很好 =====
+「Dự báo thời tiết」的中文怎麼說？|天氣預報|📺|200
+「常常」是什麼意思？|thường xuyên|🔁|100
+「麻煩」是什麼意思？|phiền phức|😩|200
+「舒服」是什麼意思？|dễ chịu / thoải mái|😌|200
+「友善」是什麼意思？|thân thiện|🤝|200
+「晴天、雨天、陰天」，哪一個會出太陽？|晴天|☀️|200
+台灣哪一個季節非常熱？（依課文）|夏天|🏖️|200
+天氣預報說明天會下雨，出門要帶什麼？|雨傘|☂️|200
+「會」在「明天會下雨」裡是什麼意思？|sẽ|☔|200
+「今天天氣怎麼樣？」是什麼意思？|Hôm nay thời tiết thế nào?|🌤️|300
+填空：我10歲，你12歲，你＿＿我大。（hơn）|比|⚖️|300
+星巴克的咖啡比露易莎的貴，哪一個比較貴？|星巴克|☕|300
+「這件衣服很好看」是什麼意思？|Cái áo này rất đẹp.|👕|300
+台灣的冬天怎麼樣？（依課文）|不太冷，可是常常下雨。|🌧️|400
+「今天比昨天冷」是什麼意思？|Hôm nay lạnh hơn hôm qua.|🥶|400
+「他比我高」是什麼意思？|Anh ấy cao hơn tôi.|📏|400
+「明天會下雨」是什麼意思？|Ngày mai sẽ mưa.|☔|400
+「我的同事非常友善」是什麼意思？|Đồng nghiệp của tôi rất thân thiện.|🤝|400
+「颱風星期五不會來台灣」是什麼意思？|Bão sẽ không đến Đài Loan vào thứ Sáu.|🌀|500
+「Mùa hè Phi-líp-pin nóng hơn mùa hè Đài Loan」的中文怎麼說？|菲律賓的夏天比台灣的夏天熱。|🥵|700
+「Khi làm việc nếu không cẩn thận thì sẽ bị thương」的中文怎麼說？|工作的時候如果不小心，就會受傷。|🤕|800
+
+# ===== 第20課 我感冒了 =====
+「Tôi bị cảm rồi」的中文怎麼說？|我感冒了。|🤧|200
+「發燒」是什麼意思？|bị sốt|🌡️|200
+「頭痛」是什麼意思？|đau đầu|🤕|200
+「肚子痛」是什麼意思？|đau bụng|🤢|200
+「流鼻水、咳嗽」是什麼意思？|chảy nước mũi、ho|🤧|200
+「老闆生氣了」是什麼意思？|Ông chủ giận rồi.|😠|200
+感冒了要吃什麼？|藥|💊|200
+媽媽說我要多吃什麼？（依課文）|水果|🍎|200
+「我的衣服髒了」是什麼意思？|Áo của tôi bị bẩn rồi.|👕|300
+填空：我下班＿＿，要去看電影。（sau khi）|以後|🎬|300
+填空：你胖了，要＿＿喝酒。（ít）|少|🍺|300
+填空：上課的時候，要＿＿說中文。（nhiều）|多|🗣️|300
+「我回家以後，先吃飯，然後洗澡」，先做什麼？|吃飯|🍚|300
+醫生說回家以後要做什麼？（依課文）|多喝水、多休息|💧|400
+「你感冒了，要多喝水，少喝飲料」是什麼意思？|Bạn bị cảm rồi, nên uống nhiều nước, uống ít nước ngọt.|💧|600
+「Sáng nay sau khi ngủ dậy, tôi cảm thấy rất khó chịu」的中文怎麼說？|我今天早上起床以後，覺得很不舒服。|🛏️|700
+「Sáng nay sau khi ngủ dậy, tôi thấy đầu rất đau, bụng cũng hơi đau」的中文怎麼說？|我今天早上起床以後，覺得頭很痛，肚子也有一點痛。|🤕|1000
+
+# ===== 第21課 不要按電梯按鈕，很危險 =====
+「危險」是什麼意思？|nguy hiểm|⚠️|200
+「小心」是什麼意思？|cẩn thận|⚠️|100
+「跌倒」是什麼意思？|ngã / té|🤕|200
+「不要＋動詞」是什麼意思？|đừng + động từ（不可以做）|🚫|300
+填空：工作很多，我今天要晚＿＿下班。（một chút）|一點|🌙|300
+「請你小聲一點」是什麼意思？|Xin bạn nói nhỏ một chút.|🤫|400
+「不要跑，地上有水」是什麼意思？|Đừng chạy, trên sàn có nước.|⚠️|400
+「Đừng bị thương」的中文怎麼說？|不要受傷了。|🤕|400
+「請你不要在這裡抽菸」是什麼意思？|Xin bạn đừng hút thuốc ở đây.|🚭|500
+「老闆在說話，不要玩手機」是什麼意思？|Ông chủ đang nói chuyện, đừng nghịch điện thoại.|📱|500
+「請你明天早一點上班」是什麼意思？|Xin bạn ngày mai đi làm sớm một chút.|⏰|500
+「他們在會議室開會，你不要進去」是什麼意思？|Họ đang họp trong phòng họp, (bạn) đừng vào.|🚪|600
+「地上有水，走路要慢一點」是什麼意思？|Trên sàn có nước, khi đi bộ phải chậm một chút.|💧|600
+「我們在保養電梯，你不要按電梯按鈕，很危險」是什麼意思？|Chúng tôi đang bảo trì thang máy, đừng bấm nút thang máy, rất nguy hiểm.|🛗|700
+「Hôm qua trời mưa, trên sàn có nước, khi đi bộ phải cẩn thận một chút, đừng bị ngã」的中文怎麼說？|昨天下雨，地上有水，走路的時候要小心一點，不要跌倒了。|🌧️|1000
+
+# ===== 第22課 箱子在門外面，請你搬進來 =====
+「垃圾」是什麼意思？|rác|🗑️|100
+「重」是什麼意思？|nặng|🏋️|100
+「馬上」是什麼意思？|ngay / lập tức|⚡|200
+「搬」是什麼意思？|khiêng / chuyển|📦|200
+填空：請你上＿＿，我在二樓會議室。|來|⬆️|300
+別人問你：「我可以進去嗎？」你說可以，要怎麼回答？|可以，進來吧！|🚪|300
+填空：請你下班以後＿＿＿＿，我在辦公室。（qua đây）|過來|🏢|400
+「他去開會了，十點回來」是什麼意思？|Anh ấy đi họp rồi, 10 giờ về.|👥|400
+「這個箱子，請你搬下去」是什麼意思？|Cái thùng này, xin bạn khiêng xuống.|📦|500
+「箱子在門外面，請你搬進來」是什麼意思？|Cái thùng ở ngoài cửa, xin bạn khiêng vào.|📦|600
+「箱子裡面的東西要拿出來嗎？」是什麼意思？|Đồ bên trong thùng có cần lấy ra không?|📦|600
+「自己的垃圾，請自己帶回去」是什麼意思？|Rác của mình, xin tự mang về.|🗑️|700
+
+# ===== 第23課 我的手受傷了，不能搬東西 =====
+「遲到」是什麼意思？|đến trễ|⏰|100
+「塞車」是什麼意思？|kẹt xe|🚗|100
+「散步」是什麼意思？|đi dạo|🚶|100
+「只有」是什麼意思？|chỉ có|☝️|200
+「如果」是什麼意思？|nếu|❔|200
+「還好嗎？」是什麼意思？|Bạn ổn không? / Còn ổn chứ?|💬|200
+「因為…，所以…」是什麼意思？|Vì … nên …|🔗|300
+填空：一＿＿汽車。（lượng từ cho xe）|輛|🚗|300
+「你今天為什麼遲到？」是什麼意思？|Hôm nay sao bạn đến trễ?|⏰|400
+填空：＿＿電梯壞了，＿＿我們不能搭電梯。|因為；所以|🛗|500
+「你能幫我翻譯嗎？」是什麼意思？|Bạn có thể dịch giúp tôi không?|🗣️|500
+「你今天能不能加班？」是什麼意思？|Hôm nay bạn có thể tăng ca không?|🌙|600
+「我的手受傷了，不能搬東西」是什麼意思？|Tay tôi bị thương rồi, không thể khiêng đồ.|🤕|600
+「因為颱風來了，所以明天放假」是什麼意思？|Vì bão đến, nên ngày mai được nghỉ.|🌀|600
+「因為他的手受傷了，所以去辦公室休息了」是什麼意思？|Vì tay anh ấy bị thương, nên đã đi văn phòng nghỉ.|🏢|700
+「Vì sáng nay kẹt xe, nên tôi đã đến trễ」的中文怎麼說？|因為今天早上塞車，所以我遲到了。|🚗|800
+「如果下雨，我就不能去公園跑步了」是什麼意思？|Nếu trời mưa, tôi sẽ không thể đi công viên chạy bộ.|🏃|800
+
+# ===== 第24課 我想請假 =====
+「火鍋」是什麼意思？|lẩu|🍲|100
+「第二天」是什麼意思？|ngày hôm sau|📆|100
+「出車禍」是什麼意思？|bị tai nạn giao thông|🚑|200
+「想＋動詞」是什麼意思？|muốn + động từ|💭|200
+「好好休息」是什麼意思？|nghỉ ngơi cho khỏe|🛌|300
+「我想請假」是什麼意思？|Tôi muốn xin nghỉ phép.|📝|300
+填空：我們＿＿星期一＿＿星期五都要工作。|從；到|📆|400
+「你想不想吃東西？」是什麼意思？|Bạn có muốn ăn gì không?|🍽️|400
+別人問你：「你明天想去吃火鍋嗎？」你不想，想吃牛肉麵，要怎麼回答？|不想，我想去吃牛肉麵。|🍜|500
+「Tôi muốn xin nghỉ một ngày」的中文怎麼說？|我想請一天假。|📝|500
+「醫生說我要休息三天」是什麼意思？|Bác sĩ nói tôi phải nghỉ ba ngày.|👨‍⚕️|600
+「我出車禍了，不能去上班」是什麼意思？|Tôi bị tai nạn xe rồi, không đi làm được.|🚑|700
+「請你幫我請一天假」是什麼意思？|Nhờ bạn xin nghỉ giúp tôi một ngày.|📝|700
+「我們的工作時間是從早上8點到下午4點半」是什麼意思？|Giờ làm việc của chúng tôi là từ 8 giờ sáng đến 4 giờ rưỡi chiều.|🕗|700
+「Tôi muốn xin nghỉ ba ngày, từ thứ Hai đến thứ Tư」的中文怎麼說？|我想請三天假，從星期一到星期三。|📆|800
+「Tôi làm việc ở Đài Loan từ tháng Hai năm ngoái đến tháng Sáu năm nay」的中文怎麼說？|我從去年二月到今年六月都在台灣工作。|🏝️|900
+
+# ===== 綜合：句子排序（把詞語排成正確的句子）=====
+排列句子：從／我／到／騎／摩托車／家／工廠|我從家騎摩托車到工廠。|🏍️|600
+排列句子：因為／我／所以／感冒了／沒來上班|因為我感冒了，所以沒來上班。|🤧|600
+排列句子：以後／我／下班／看電影／要去|我下班以後要去看電影。|🎬|600
+排列句子：我們／從／到／星期五／星期一／都要／工作|我們從星期一到星期五都要工作。|📆|700
+排列句子：的時候／保養／電梯／不可以／搭電梯|保養電梯的時候，不可以搭電梯。|⛔|800
+排列句子：先／我／回家／再／去／公司|我先回家，再去公司。|🏠|500
+排列句子：比／夏天／熱／台灣／菲律賓的／的夏天|菲律賓的夏天比台灣的夏天熱。|🥵|800`;
+
+const DEFAULT_CHANCE=`# 格式：圖示|內容|金額（正數加錢，負數扣錢）
+# 機會：好事比較多，偶爾有小麻煩。內容取材自講義 L1~L24 的情境與單字。
+🎁|老闆給你獎金！|500
+🧧|主管說你的工作很好，給你獎金。|400
+🎉|老闆說明天放假！|300
+🛗|你修理好電梯，客戶很高興。|300
+🎂|朋友給你生日禮物。|300
+📈|你的中文變好了，老闆很高興。|300
+🔧|你幫同事拿工具，同事給你獎金。|300
+🍲|老闆說火鍋你不用付款。|200
+💪|你多運動，身體變好了。|200
+😊|你今天很早上班，老闆很高興。|200
+📚|上課的時候你多說中文，老師很高興。|200
+🌤️|今天天氣非常好，你去公園散步。|100
+☕|同事幫你買了一杯咖啡。|100
+🧋|朋友給你一杯珍珠奶茶。|100
+🧤|同事給你一雙新手套。|100
+🚆|你從台中搭高鐵到台北，一路很舒服。|100
+🌈|雨天變晴天，大家都很高興。|100
+👋|你說「早安」，同事也跟你說「早安」，大家都很高興。|100
+🤝|客戶說：「你很友善，謝謝你！」|200
+🗣️|你幫客戶翻譯，客戶說「謝謝你」，還給你獎金。|300
+📷|你用手機幫同事拍照，同事給你一杯咖啡。|200
+🏆|你今天沒有遲到，也沒有受傷，工作很好。|300
+🚌|你搭公車去工廠，今天不用付款。|100
+💡|你知道哪裡壞了，主管說：「太好了！」|200
+🙋|你有問題，組長告訴你怎麼做。|100
+😴|你昨天晚上十點睡覺，今天上班很開心。|100
+🚗|今天早上塞車，你遲到了。|-200
+🤒|你感冒了，要去看醫生、吃藥。|-300
+💧|地上有水，你跌倒了。|-200
+🌀|颱風來了，今天不能上班。|-200
+📱|你上班的時候玩手機，老闆不高興。|-200
+🚬|你在工作的時候抽菸，不可以！|-300
+🔌|你的手機壞了，要買新的。|-300
+👟|你的鞋子壞了，要買一雙新的。|-200
+🔩|你的扳手壞了，要買新的。|-100
+🧾|你買了兩杯咖啡和一份雞排，一共要付款。|-200
+🌧️|天氣預報說會下雨，可是你沒有帶雨傘。|-100
+😪|你昨天很晚睡覺，今天上班很累。|-100
+🍗|肚子好餓，你買了一份雞排和一杯可樂。|-100
+🎬|下班以後，你去看電影，一共付款兩百元。|-200
+🏥|你的手受傷了，要去醫院。|-300`;
+
+const DEFAULT_FATE=`# 格式：圖示|內容|金額（正數加錢，負數扣錢）
+# 命運：壞事比較多（約六成扣錢），起伏比較大。內容取材自講義 L1~L24 的情境與單字。
+🌟|你今天運氣很好，客戶給你獎金！|400
+📈|老闆說下個月會加薪！|500
+🍀|你在地上找到一百元。|100
+🏖️|因為颱風來了，所以明天放假，你很高興。|300
+🎊|你的同事和朋友給你生日禮物。|300
+🛠️|你保養好電梯，主管說：「太好了！」|300
+🌞|今天出太陽了，你和同事一起去散步。|100
+🎈|你的組長說，這個月大家的工作都很好。|200
+🧑‍💼|客戶說你的工作很好，給你獎金。|400
+🗣️|你用中文跟經理說話，經理說你的中文很好。|200
+🍜|你今天去吃牛肉麵，老闆說你不用付款。|200
+🚇|你搭捷運去高鐵站，很快就到了。|100
+🏃|你在公園跑步，身體變好了。|100
+🎁|你幫朋友的忙，朋友給你一份禮物。|200
+💬|你幫客戶翻譯，客戶說「謝謝你」。|200
+🤲|你幫同事拿工具，同事給你一杯咖啡。|100
+🌈|你今天不用加班，可以早一點下班。|200
+🚗|你出車禍了，要去看醫生。|-500
+🌀|颱風來了，你的雨傘壞了，要買新的。|-100
+🤧|你感冒了，要去醫院看醫生。|-300
+🔇|你在會議室開會的時候玩手機，主管生氣了。|-200
+🛗|電梯壞了，你要多花時間檢查。|-100
+⏰|你沒有打卡，要去找主管說明。|-100
+🍔|你和同事一起吃飯，一共要付款。|-300
+🛍️|你買了一件衣服和一雙鞋子，一共要付款。|-400
+🚌|你搭公車去銀行，一共要付款。|-100
+📵|你的手機壞了，要買新的。|-300
+🧳|你要去台北，搭高鐵很貴。|-200
+🥶|冬天天氣變冷了，你要買新衣服。|-200
+🌧️|天氣預報說明天會下雨，你要買雨傘。|-100
+🤕|你搬很重的箱子，不小心受傷了。|-300
+😴|你昨天晚上沒睡好，今天上班遲到了。|-200
+🚪|你離開工廠的時候，沒有鎖門，主管不高興。|-200
+🔧|你的螺絲起子壞了，要買一支新的。|-100
+🍲|肚子好餓，你去吃火鍋，一共要付款。|-200
+😷|你生病了，要戴口罩、吃藥。|-200
+🏥|你的朋友生病了，你和他一起去醫院。|-100
+🥤|你和朋友買了兩杯大杯的珍珠奶茶。|-100
+🚧|你走路的時候不小心，地上有水，你跌倒了。|-200
+🛌|你生病了，要請一天假，今天不能上班。|-300
+📺|你下班回家看電視，很晚睡覺，今天很累。|-100`;
+
+const COLORS=['#ff4d6d','#3a86ff','#06b36f','#ffa200','#8338ec','#fb5607','#00b4d8','#8ac926','#f72585','#6d4c41'];
+const AVATARS=['🐶','🐱','🐰','🐼','🦊','🐸','🦁','🐵','🐷','🐯'];
+const TOTAL=40, QCOUNT=36, PASS_BONUS=200, START_MONEY=1000;
+const LV_COLOR=['','var(--lv1)','var(--lv2)','var(--lv3)','var(--lv4)','var(--lv5)'];
+const LV_HEX=['','#2eb872','#2f80ed','#8e44ad','#e67e22','#e63946'];
+
+/* 四個角落：0 起點(機會) 10 命運 20 機會 30 命運 */
+const CORNERS={
+  0 :{icon:'🏁',label:'機會',sub:'起點',kind:'chance',c1:'#ff9f1c',c2:'#e8590c'},
+  10:{icon:'🔮',label:'命運',sub:'',kind:'fate',c1:'#9775fa',c2:'#5f3dc4'},
+  20:{icon:'🍀',label:'機會',sub:'',kind:'chance',c1:'#51cf66',c2:'#2b8a3e'},
+  30:{icon:'🎰',label:'命運',sub:'',kind:'fate',c1:'#ff6b9d',c2:'#c2255c'}
+};
+const KIND_INFO={
+  chance:{name:'機會',icon:'🍀',c1:'#51cf66',c2:'#2b8a3e',c3:'#e3fbe8',bc:'#51cf66'},
+  fate:{name:'命運',icon:'🔮',c1:'#9775fa',c2:'#5f3dc4',c3:'#efe6ff',bc:'#9775fa'}
+};
+
+/* =====================================================================
+   題庫解析
+   ===================================================================== */
+const ICON_KEYS=`蘋果🍎|香蕉🍌|水果🍇|西瓜🍉|草莓🍓|橘🍊|葡萄🍇|飯🍚|麵🍜|粽🎋|月餅🥮|餃子🥟|紅包🧧|茶🍵|奶茶🧋|咖啡☕|水🚰|火🔥|山⛰️|海🌊|河🏞️|太陽🌅|月亮🌙|月🌙|星🌟|雨🌧️|雪❄️|風🌬️|雲☁️|花🌸|樹🌳|草🌱|貓🐱|狗🐶|鳥🐦|魚🐟|馬🐴|牛🐮|豬🐷|羊🐑|雞🐔|兔🐇|龍🐲|蛇🐍|猴🐵|悟空🐵|老虎🐯|熊貓🐼|書📚|筆✏️|學校🏫|老師👩‍🏫|學生🧑‍🎓|媽媽👩|爸爸👨|家🏠|車🚗|火車🚆|飛機✈️|船⛵|錢💰|貨幣💰|元💰|手機📱|電腦💻|電影🎬|音樂🎵|聲🎵|歌🎤|運動🏃|球⚽|醫🏥|病🤒|藥💊|衣👕|鞋👟|帽🎩|眼睛👀|耳朵👂|嘴👄|手✋|腳🦶|心❤️|喜歡❤️|愛❤️|笑😄|快樂😄|高興😄|哭😢|生氣😠|時間⏰|點鐘⏰|日期📅|星期📅|月份🗓️|生日🎂|蛋糕🎂|禮物🎁|國家🌏|世界🌏|台灣🏝️|臺灣🏝️|臺北🏙️|地圖🗺️|數學🧮|加🧮|乘🧮|顏色🎨|紅色🔴|藍色🔵|黃色🟡|綠色🟢|成語📖|詩📜|唐📜|拼音🔤|字✍️|詞📝|句💬|問❓|謝🙏|對不起🙇|你好👋|夜市🏮|節日🎉|春節🧨|新年🧨|中秋🌕|端午🐲|冷🧊|熱🔥|大🐘|小🐜|吃🍽️|喝🥤|睡😴|走🚶|跑🏃|看👀|聽👂|說🗣️|買🛒|賣🛍️|唱歌🎤|跳舞💃|畫🖼️|玩🎮`;
+const ICON_LIST=ICON_KEYS.split('|').map(s=>{const m=s.match(/^([^\u{1F000}-\u{1FFFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]+)(.+)$/u);return m?[m[1],m[2]]:null}).filter(Boolean);
+const GENERIC_ICONS=['🎯','🧩','💡','🎈','🌈','🎪','🚀','🎨','🔔','🍀','🎁','🧠','🎓','🌟','🎡','🦋'];
+function hashStr(s){let h=0;for(const c of s)h=(h*31+c.codePointAt(0))>>>0;return h}
+function autoIcon(text){
+  for(const [k,e] of ICON_LIST)if(text.includes(k))return e;
+  return GENERIC_ICONS[hashStr(text)%GENERIC_ICONS.length];
+}
+function estimateMoney(q,a){
+  let d=q.length+a.length*0.8;
+  if(/成語|意思|為什麼|詞性|用法|造句|區別|不同|部首|告訴我們|字句/.test(q))d+=10;
+  return clampMoney(100+d*18);
+}
+function clampMoney(n){return Math.min(1000,Math.max(100,Math.round(n/100)*100))}
+function unq(s){s=s.trim();if(s.length>1&&/^["“].*["”]$/.test(s))s=s.slice(1,-1);return s.trim()}
+function splitFields(line){
+  if(/[|｜\t]/.test(line))return line.split(/[|｜\t]/);
+  if(line.includes(','))return line.split(',');
+  return [line];
+}
+function parseQuestions(text){
+  const out=[];
+  String(text).split(/\r?\n/).forEach(raw=>{
+    const line=raw.replace(/^﻿/,'').trim();
+    if(!line||/^(#|\/\/)/.test(line))return;
+    const f=splitFields(line).map(unq);
+    if(!f[0]||f[0]==='題目')return;
+    const q=f[0],a=f[1]||'';let icon='',money=0,img='';
+    f.slice(2).forEach(x=>{if(/^\d+$/.test(x))money=+x;else if(looksImg(x))img=x;else if(x)icon=x});
+    money=money?clampMoney(money):estimateMoney(q,a);
+    out.push({q,a,img,icon:icon||(img?'🖼️':autoIcon(q+a)),money,lv:Math.ceil(money/200)});
+  });
+  return out;
+}
+function parseEvents(text,kind){
+  const out=[];
+  String(text).split(/\r?\n/).forEach(raw=>{
+    const line=raw.replace(/^﻿/,'').trim();
+    if(!line||/^(#|\/\/)/.test(line))return;
+    const f=splitFields(line).map(unq);
+    let icon='',txt='',amt=0;
+    if(f.length>=3){icon=f[0];txt=f[1];amt=parseInt(f[2],10)}
+    else if(f.length===2){txt=f[0];amt=parseInt(f[1],10)}
+    else{txt=f[0]}
+    if(!txt||isNaN(amt))return;
+    out.push({icon:icon||KIND_INFO[kind].icon,text:txt,amt});
+  });
+  return out;
+}
+/* 湊滿 36 題 */
+function buildQuestionSet(items,doShuffle){
+  let list;
+  if(items.length>=QCOUNT){list=doShuffle?shuffle(items).slice(0,QCOUNT):items.slice(0,QCOUNT)}
+  else{
+    list=doShuffle?shuffle(items):items.slice();
+    let pool=[];
+    while(list.length+pool.length<QCOUNT)pool=pool.concat(shuffle(items));
+    list=list.concat(pool).slice(0,QCOUNT);
+    if(doShuffle)list=shuffle(list);
+  }
+  return list;
+}
+
+/* =====================================================================
+   狀態
+   ===================================================================== */
+/* 內建題庫：build.js 會把「拼音對照表.html」整理成 window.BUNDLE；沒有的話就用下面的範例題庫 */
+const banks=()=>(window.BUNDLE&&window.BUNDLE.banks)||[];
+const getBank=()=>{const id=store.get('dfw_bank');return banks().find(b=>b.id===id)||banks()[0]||null};
+const defQ=()=>(getBank()&&getBank().q)||DEFAULT_Q;
+const defC=()=>(getBank()&&getBank().chance)||DEFAULT_CHANCE;
+const defF=()=>(getBank()&&getBank().fate)||DEFAULT_FATE;
+const S={title:'知識大富翁',
+  players:[],cur:0,busy:false,diceN:1,
+  boardQ:[],               // 36 題
+  cellQ:{},                // 格子索引 -> 題目
+  texts:{q:store.get('dfw_q')||defQ(),chance:store.get('dfw_chance')||defC(),fate:store.get('dfw_fate')||defF()},
+  shuffle:true,lastCount:2,
+  cells:[]
+};
+function events(kind){
+  const l=parseEvents(S.texts[kind],kind);
+  return l.length?l:parseEvents(kind==='chance'?defC():defF(),kind);
+}
+
+/* =====================================================================
+   棋盤
+   ===================================================================== */
+function cellPos(i){ // 1 起算的 [row, col]
+  if(i===0)return [11,11];
+  if(i<10)return [11,11-i];
+  if(i===10)return [11,1];
+  if(i<20)return [11-(i-10),1];
+  if(i===20)return [1,1];
+  if(i<30)return [1,1+(i-20)];
+  if(i===30)return [1,11];
+  return [1+(i-30),11];
+}
+function buildBoard(){
+  const board=$('#board');
+  S.cells.forEach(c=>c.remove());S.cells=[];S.cellQ={};
+  let qi=0;
+  for(let i=0;i<TOTAL;i++){
+    const [r,c]=cellPos(i);
+    const d=el('div','cell');d.style.gridRow=r;d.style.gridColumn=c;
+    if(CORNERS[i]){
+      const k=CORNERS[i];
+      d.classList.add('corner');d.style.setProperty('--c1',k.c1);d.style.setProperty('--c2',k.c2);
+      d.innerHTML=(k.sub?`<div class="sub">${k.sub}</div>`:'')+`<div class="ico">${k.icon}</div><div class="lab">${k.label}</div>`;
+      d.title=k.label;
+      d.addEventListener('click',()=>{if(!$('#ov').classList.contains('show'))Snd.init(),showEventList(k.kind)});
+    }else{
+      const q=S.boardQ[qi++]||{icon:'❓',lv:1,money:100,q:'',a:''};
+      S.cellQ[i]=q;
+      d.style.setProperty('--h',(qi*37+20)%360);d.style.setProperty('--lv',LV_COLOR[q.lv]);
+      d.innerHTML=`<div class="band">${'⭐'.repeat(q.lv)}</div><div class="ico">${esc(q.icon)}</div>`;
+    }
+    board.append(d);S.cells.push(d);
+  }
+  placeTokens();
+}
+function applyBank(){
+  const items=parseQuestions(S.texts.q);
+  if(!items.length){S.texts.q=defQ();return applyBank()}
+  S.boardQ=buildQuestionSet(items,S.shuffle);
+  buildBoard();
+}
+
+/* 棋子 */
+function ensureTokens(){
+  const box=$('#tokens');
+  S.players.forEach((p,i)=>{
+    if(!p.tk){
+      p.tk=el('div','token'+(S.players.length>6?' small':''));p.tk.style.setProperty('--c',p.color);
+      p.tk.innerHTML=`<div class="tk">${p.emoji}</div>`;box.append(p.tk);
+    }
+  });
+}
+function placeTokens(){
+  ensureTokens();
+  const wrap=$('#boardWrap').getBoundingClientRect();
+  if(!S.cells.length||!wrap.width)return;
+  const groups={};
+  S.players.forEach((p,i)=>{(groups[p.pos]=groups[p.pos]||[]).push(p)});
+  Object.entries(groups).forEach(([pos,ps])=>{
+    const r=S.cells[pos].getBoundingClientRect();
+    const tw=ps[0].tk.offsetWidth||30,n=ps.length;
+    const step=n>1?Math.min(tw*.92,(r.width-tw-6)/(n-1)):0;
+    ps.forEach((p,k)=>{
+      const x=r.left-wrap.left+(r.width-tw)/2+(k-(n-1)/2)*step;
+      const y=r.top-wrap.top+r.height-tw-r.height*.04;
+      p.tk.style.left=x+'px';p.tk.style.top=y+'px';
+    });
+  });
+  S.players.forEach((p,i)=>p.tk.classList.toggle('cur',i===S.cur&&!S.busy));
+}
+window.addEventListener('resize',()=>{S.players.forEach(p=>{if(p.tk)p.tk.style.transition='none'});placeTokens();requestAnimationFrame(()=>S.players.forEach(p=>{if(p.tk)p.tk.style.transition=''}))});
+
+/* =====================================================================
+   介面更新
+   ===================================================================== */
+const lastMoney=new Map();
+function renderPlayers(){
+  const box=$('#players');
+  const mx=Math.max(...S.players.map(p=>p.money)),top=S.players.length>1&&S.players.filter(p=>p.money===mx).length===1?mx:-1;
+  box.innerHTML='';box.classList.toggle('many',S.players.length>6);
+  S.players.forEach((p,i)=>{
+    const d=el('div','pc'+(i===S.cur?' cur':''));d.style.setProperty('--c',p.color);
+    d.innerHTML=`<div class="av">${p.emoji}</div><div class="info"><div class="pn">${esc(p.name)}</div><div class="pm">💰 ${p.money}</div></div>${p.money===top&&top>0?'<div class="crown">👑</div>':''}`;
+    if(lastMoney.has(p)&&lastMoney.get(p)!==p.money)d.classList.add('bump');
+    lastMoney.set(p,p.money);
+    p.card=d;box.append(d);
+  });
+}
+function renderTurn(){
+  const t=$('#turn'),p=S.players[S.cur];
+  if(!p){t.innerHTML='請先開始遊戲';t.style.setProperty('--tc','#ccc');return}
+  t.style.setProperty('--tc',p.color);
+  t.innerHTML=`<span class="av">${p.emoji}</span><span>換${esc(p.name)} 了</span>`;
+}
+function say(){} // 訊息區已停用
+function toast(txt){const t=el('div','toast',esc(txt));document.body.append(t);setTimeout(()=>t.remove(),2500)}
+function setDie(d,n){
+  const on={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n];
+  d.innerHTML='';for(let i=0;i<9;i++)d.append(el('i',on.includes(i)?'on':''));d.dataset.v=n;
+}
+function setDiceMode(n){
+  S.diceN=n;
+  $('#seg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+  $('#d2').classList.toggle('hide',n===1);
+}
+function setRollBtn(){
+  const b=$('#rollBtn');b.disabled=S.busy||!S.players.length;
+  b.textContent=S.busy?'⏳':'👆';
+}
+
+/* 浮動分數 & 彩帶 */
+function floatText(txt,color,anchor){
+  const r=(anchor||$('#center')).getBoundingClientRect();
+  const f=el('div','ftext',esc(txt));f.style.color=color;f.style.left=(r.left+r.width/2)+'px';f.style.top=(r.top+r.height/2)+'px';
+  document.body.append(f);setTimeout(()=>f.remove(),1700);
+}
+const fx={cv:null,ctx:null,parts:[],run:false};
+function confetti(n=140,ox=.5,oy=.4){
+  fx.cv=fx.cv||$('#fx');fx.ctx=fx.ctx||fx.cv.getContext('2d');
+  fx.cv.width=innerWidth;fx.cv.height=innerHeight;
+  const cols=['#ff4d6d','#ffd43b','#51cf66','#4dabf7','#b197fc','#ff922b'];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=6+Math.random()*12;
+    fx.parts.push({x:innerWidth*ox,y:innerHeight*oy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-6,g:.3,s:6+Math.random()*8,c:cols[rnd(cols.length)],r:Math.random()*6,vr:(Math.random()-.5)*.4,life:110+rnd(60)});
+  }
+  if(!fx.run){fx.run=true;requestAnimationFrame(tick)}
+}
+function tick(){
+  const {ctx,cv}=fx;ctx.clearRect(0,0,cv.width,cv.height);
+  fx.parts=fx.parts.filter(p=>p.life-->0&&p.y<cv.height+20);
+  fx.parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.globalAlpha=Math.min(1,p.life/30);ctx.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);ctx.restore()});
+  if(fx.parts.length)requestAnimationFrame(tick);else{fx.run=false;ctx.clearRect(0,0,cv.width,cv.height)}
+}
+
+/* 加減錢 */
+function addMoney(p,amt){
+  const before=p.money;p.money=Math.max(0,p.money+amt);
+  renderPlayers();
+  const diff=p.money-before;
+  floatText((diff>0?'+':'')+diff+' 元',amt>=0?'#2b8a3e':'#e03131',p.card);
+}
+
+/* =====================================================================
+   彈窗
+   ===================================================================== */
+const ov=$('#ov');
+function showModal(box){ov.innerHTML='';ov.append(box);ov.classList.add('show')}
+function hideModal(){ov.classList.remove('show');ov.innerHTML=''}
+
+function showEventList(kind){
+  const k=KIND_INFO[kind],list=events(kind);
+  const box=el('div','box');box.style.setProperty('--bc',k.bc);
+  box.innerHTML=`<div class="ctitle">${k.icon} ${k.name}　內容一覽</div>
+    <div class="evlist">${list.map(e=>`<div class="evi"><span class="e">${esc(e.icon)}</span><span class="t">${esc(e.text)}</span><span class="a ${e.amt>=0?'pos':'neg'}">${e.amt>=0?'+':''}${e.amt}</span></div>`).join('')}</div>
+    <div class="row-btns"><button class="btn y" id="ok">關閉</button></div>`;
+  showModal(box);Snd.click();
+  box.querySelector('#ok').onclick=()=>{Snd.click();hideModal()};
+}
+
+function questionModal(p,i){
+  return new Promise(res=>{
+    const q=S.cellQ[i];
+    const src=q.img?IMG.resolve(q.img):'';
+    const box=el('div','box qbox'+(src?' hasimg':''));box.style.setProperty('--lvc',LV_HEX[q.lv]);
+    box.innerHTML=`
+      <div class="qhead"><div class="qi${src?' sm':''}">${esc(q.icon)}</div>
+        <div><div class="tag">${'⭐'.repeat(q.lv)}　${q.money} 元</div></div></div>
+      ${src?`<img class="qimg" alt="" src="${esc(src)}">`:''}
+      <div class="qtext${src?' sm':''}">${esc(q.q)}</div>
+      <div class="qans hidden" id="ans">${esc(q.a||'（沒有設定答案）')}</div>
+      <div class="row-btns">
+        <button class="btn b" id="rev">👀 看答案</button>
+        <button class="btn g" id="yes">✅ 對了 +${q.money}</button>
+        <button class="btn r" id="no">❌ 錯了</button>
+      </div>`;
+    showModal(box);Snd.flip();
+    const im=box.querySelector('.qimg');
+    if(im){
+      im.onclick=()=>{Snd.click();im.classList.toggle('zoom')};
+      im.onerror=()=>{const m=el('div','qimgmiss','找不到圖片：'+esc(q.img));im.replaceWith(m)};
+    }
+    const ans=box.querySelector('#ans');
+    box.querySelector('#rev').onclick=()=>{Snd.click();Snd.coin();ans.classList.remove('hidden');ans.classList.add('show')};
+    box.querySelector('#yes').onclick=()=>{
+      hideModal();Snd.win();confetti(160,.5,.45);addMoney(p,q.money);
+      say(`🎉 ${esc(p.name)} 答對了，獲得 ${q.money} 元！`);res();
+    };
+    box.querySelector('#no').onclick=()=>{
+      hideModal();Snd.lose();say(`😅 ${esc(p.name)} 沒有答對，下次加油！`);res();
+    };
+  });
+}
+
+function eventCard(p,corner){
+  return new Promise(res=>{
+    const k=KIND_INFO[corner.kind],list=events(corner.kind),ev=list[rnd(list.length)];
+    const box=el('div','box');box.style.setProperty('--bc',k.c1);
+    box.style.setProperty('--c1',k.c1);box.style.setProperty('--c2',k.c2);box.style.setProperty('--c3',k.c3);
+    box.innerHTML=`<div class="cardWrap">
+      <div class="ctitle">${k.icon} ${esc(p.name)} 抽到「${k.name}」卡！</div>
+      <div class="card" id="card">
+        <div class="back"><div>${k.icon}</div></div>
+        <div class="front"><div class="cico">${esc(ev.icon)}</div><div class="ctxt">${esc(ev.text)}</div>
+          <div class="camt ${ev.amt>=0?'pos':'neg'}">${ev.amt>=0?'+':''}${ev.amt} 元</div></div>
+      </div>
+      <div class="row-btns"><button class="btn y" id="ok" disabled>收下</button></div></div>`;
+    showModal(box);Snd.flip();
+    const card=box.querySelector('#card'),ok=box.querySelector('#ok');
+    setTimeout(()=>{
+      card.classList.add('flip');Snd.flip();
+      setTimeout(()=>{
+        if(ev.amt>=0){Snd.win();confetti(110,.5,.4)}else Snd.lose();
+        addMoney(p,ev.amt);ok.disabled=false;
+        say(`${ev.icon} ${esc(ev.text)}（${ev.amt>=0?'+':''}${ev.amt} 元）`);
+      },750);
+    },700);
+    ok.onclick=()=>{Snd.click();hideModal();res()};
+  });
+}
+
+/* =====================================================================
+   遊戲流程
+   ===================================================================== */
+async function movePlayer(p,n){
+  for(let s=0;s<n;s++){
+    p.pos=(p.pos+1)%TOTAL;
+    const c=S.cells[p.pos];c.classList.add('step');
+    p.tk.classList.remove('hop');void p.tk.offsetWidth;p.tk.classList.add('hop');
+    Snd.step(s);placeTokens();
+    if(p.pos===0){
+      p.money+=PASS_BONUS;renderPlayers();Snd.coin();floatText('經過起點 +'+PASS_BONUS,'#e67700',p.card);
+    }
+    await sleep(270);
+    c.classList.remove('step');
+  }
+}
+async function landOn(p){
+  const i=p.pos,c=S.cells[i];
+  c.classList.add('land');Snd.land();await sleep(1000);c.classList.remove('land');
+  if(CORNERS[i])await eventCard(p,CORNERS[i]);else await questionModal(p,i);
+}
+async function doRoll(){
+  if(S.busy||!S.players.length)return;
+  Snd.init();S.busy=true;setRollBtn();placeTokens();
+  const p=S.players[S.cur],d1=$('#d1'),d2=$('#d2'),n=S.diceN;
+  let again=false;
+  try{
+    say('');
+    Snd.roll();
+    [d1,d2].forEach(d=>{d.classList.remove('pop');d.classList.add('rolling')});
+    let a=1,b=1;const t0=performance.now();
+    while(performance.now()-t0<1100){a=1+rnd(6);b=1+rnd(6);setDie(d1,a);setDie(d2,b);await sleep(85)}
+    [d1,d2].forEach(d=>{d.classList.remove('rolling');d.classList.add('pop')});
+    const total=n===1?a:a+b;
+    again=n===2&&a===b;
+    Snd.coin();
+    say(`${n===1?'':a+' + '+b+' = '}<b style="color:#e63946">${total}</b> 點！前進 ${total} 格${again?'　🎊 兩顆一樣，再擲一次！':''}`);
+    await sleep(700);
+    await movePlayer(p,total);
+    await landOn(p);
+  }catch(e){console.error(e)}
+  S.busy=false;
+  if(again){say(`🎊 ${esc(p.name)} 擲出相同點數，再擲一次！`)}
+  else{S.cur=(S.cur+1)%S.players.length;say('')}
+  renderPlayers();renderTurn();setRollBtn();placeTokens();
+}
+
+/* =====================================================================
+   開始畫面
+   ===================================================================== */
+function readFileText(file){
+  return new Promise((ok,bad)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      let t=new TextDecoder('utf-8').decode(fr.result);
+      if(t.includes('�')){try{t=new TextDecoder('big5').decode(fr.result)}catch(e){}}
+      ok(t);
+    };
+    fr.onerror=bad;fr.readAsArrayBuffer(file);
+  });
+}
+/* ---- 匯入「拼音對照表.html」：題庫（含圖片）、機會、命運、拼音一次進來 ---- */
+const isPytTable=t=>/<h2 id="q"/.test(t)&&/class="h"/.test(t);
+const PYT_LAT=/[A-Za-z\u00C0-\u024F\u1EA0-\u1EF9]+(?:[ ][A-Za-z\u00C0-\u024F\u1EA0-\u1EF9]+)*/g;
+const PYT_SYL=/[A-Za-z\u00FC\u00DC\u00EA\u00CA\u0101\u00E1\u01CE\u00E0\u0113\u00E9\u011B\u00E8\u012B\u00ED\u01D0\u00EC\u014D\u00F3\u01D2\u00F2\u016B\u00FA\u01D4\u00F9\u01D6\u01D8\u01DA\u01DC\u0144\u0148\u01F9\u1E3F]+/g;
+function pyAlign(h,p0){
+  let p=p0;const nc=[...h].filter(c=>CJK_TEST.test(c)).length;
+  if(!nc||!p0.trim())return null;
+  (h.match(PYT_LAT)||[]).forEach(l=>{const k=p.indexOf(l);if(k>=0)p=p.slice(0,k)+' '+p.slice(k+l.length)});
+  const syl=p.match(PYT_SYL)||[];
+  return syl.length===nc?syl.join(' '):null;
+}
+function importPytTable(html){
+  store.set('dfw_bank','mine');
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const tb=id=>{let t=doc.getElementById(id);t=t&&t.nextElementSibling;while(t&&t.tagName!=='TABLE')t=t.nextElementSibling;return t&&t.tBodies[0]};
+  const tx=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const fld=s=>s.replace(/[|｜\t\r\n]/g,'｜');
+  const pyt={};let nImg=0,skipped=0;
+  const learn=cell=>{
+    const h=cell&&cell.querySelector('.h'),p=cell&&cell.querySelector('.p');
+    if(!h||!p)return;
+    const a=pyAlign(tx(h),tx(p));if(a)pyt[tx(h)]=a;else if(tx(p))skipped++;
+  };
+  const qs=[],chance=[],fate=[];
+  const tq=tb('q');
+  if(tq)[...tq.rows].forEach(tr=>{
+    const tds=[...tr.cells],q=tx(tds[1]&&tds[1].querySelector('.h')),a=tx(tds[2]&&tds[2].querySelector('.h'));
+    if(!q)return;
+    learn(tds[1]);learn(tds[2]);
+    let icon=tx(tr.querySelector('td.ic'));if(icon==='❓')icon='';
+    const m=parseInt(tx(tr.querySelector('td.m')),10),img=tr.querySelector('td.im img');
+    let name='';
+    if(img&&/^data:/.test(img.getAttribute('src')||'')){
+      name=img.getAttribute('data-name')||('圖片'+(nImg+1)+'.jpg');
+      IMG.put(name,img.getAttribute('src'));nImg++;
+    }
+    qs.push([fld(q),fld(a),icon,isNaN(m)?'':m,name].join('|').replace(/\|+$/,''));
+  });
+  const ev=(id,out)=>{const t=tb(id);if(t)[...t.rows].forEach(tr=>{
+    const c=tr.cells[1],text=tx(c&&c.querySelector('.h'));if(!text)return;
+    learn(c);
+    const amt=parseInt(tx(tr.querySelector('td.m')),10);
+    out.push([fld(tx(tr.querySelector('td.ic'))),fld(text),isNaN(amt)?0:amt].join('|'));
+  })};
+  ev('c',chance);ev('f',fate);
+  window.PYTU=pyt;store.set('dfw_pyt',JSON.stringify(pyt));
+  toast(`已匯入：題目 ${qs.length} 題、圖片 ${nImg} 張、機會 ${chance.length}、命運 ${fate.length}、拼音 ${Object.keys(pyt).length} 句`+(skipped?`（${skipped} 句拼音對不上已略過）`:''));
+  return {q:qs.length?'# 匯入自拼音對照表\n'+qs.join('\n'):null,chance:chance.length?'# 匯入自拼音對照表\n'+chance.join('\n'):null,fate:fate.length?'# 匯入自拼音對照表\n'+fate.join('\n'):null};
+}
+function pickFile(accept,cb){
+  const inp=document.createElement('input');inp.type='file';inp.accept=accept||'.txt,.csv,.tsv,.html,.htm,text/plain,text/html';
+  inp.onchange=async()=>{if(inp.files[0])cb(await readFileText(inp.files[0]))};inp.click();
+}
+function downloadText(name,text){
+  const blob=new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`}
+
+function qStatus(text){
+  const n=parseQuestions(text).length;
+  if(!n)return `⚠️ 還沒有有效的題目，開始時會使用預設題庫。`;
+  if(n<QCOUNT)return `目前 ${n} 題，不足 ${QCOUNT} 題，開始時會「隨機重複」題目補滿 ${QCOUNT} 題。`;
+  if(n===QCOUNT)return `目前剛好 ${QCOUNT} 題，很棒！`;
+  return `目前 ${n} 題，超過 ${QCOUNT} 題，開始時會取出 ${QCOUNT} 題放上棋盤。`;
+}
+
+function showStart(){
+  const box=el('div','box sbox');box.style.setProperty('--bc','#ff6b6b');
+  let count=S.players.length||S.lastCount;
+  const names=S.players.map(p=>p.name);
+  box.innerHTML=`<h2>🎲 遊戲設定</h2>
+    <div class="prow"><span class="lbl" style="white-space:nowrap">🏷️ 遊戲名稱</span><input class="txt" id="ttl" maxlength="10" placeholder="知識大富翁"></div>
+    <div class="start-grid">
+      <div>
+        <div class="lbl">👥 玩家人數</div>
+        <div class="cnt" id="cnt">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div>
+        <div class="lbl" style="margin-top:6px">✏️ 玩家名字</div>
+        <div class="plist" id="plist"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="lbl">📚 題庫</div>
+        ${banks().length?`<div class="cnt" id="banks" style="gap:6px">${banks().map((b,i)=>`<button class="btn s" data-i="${i}" style="width:auto;aspect-ratio:auto;padding:0 14px;font-size:clamp(15px,2.5vmin,22px)">📦 ${esc(b.name)}（${b.counts.q}）</button>`).join('')}</div>`:''}
+        <textarea class="big" id="qta" style="height:min(21vh,210px)" spellcheck="false"></textarea>
+        <div class="help">每行一題：題目｜答案｜圖示｜獎金（100~1000）｜圖片檔名。圖示、獎金、圖片可省略。</div>
+        <div class="status" id="qst"></div>
+        <label class="chk"><input type="checkbox" id="shf"><span>隨機打亂題目的順序</span></label>
+        <div class="row-btns" style="margin:0;justify-content:flex-start">
+          <button class="btn p s" id="imp">📂 匯入題庫檔</button>
+          <button class="btn b s" id="def">♻️ 預設題庫</button>
+          <button class="btn y s" id="imi">🖼️ 匯入圖片</button>
+        </div>
+      </div>
+    </div>
+    <div class="row-btns"><button class="btn g" id="go">🚀 開始遊戲！</button>${S.players.length?'<button class="btn r" id="cancel">取消</button>':''}</div>`;
+  showModal(box);
+  const qta=box.querySelector('#qta'),shf=box.querySelector('#shf');
+  qta.value=S.texts.q;shf.checked=S.shuffle;box.querySelector('#ttl').value=S.title;
+  const upd=()=>box.querySelector('#qst').textContent=qStatus(qta.value);
+  qta.addEventListener('input',upd);upd();
+  const markBank=()=>box.querySelectorAll('#banks button').forEach(b=>{const on=banks()[+b.dataset.i].id===store.get('dfw_bank');b.style.background=on?'linear-gradient(180deg,#ffd43b,#f08c00)':'#e9ecef';b.style.color=on?'#fff':'inherit'});
+  box.querySelectorAll('#banks button').forEach(b=>b.onclick=()=>{
+    Snd.init();Snd.click();
+    const B=banks()[+b.dataset.i];
+    qta.value=B.q;upd();
+    S.texts.chance=B.chance;S.texts.fate=B.fate;store.set('dfw_chance',B.chance);store.set('dfw_fate',B.fate);
+    Object.keys(B.imgs||{}).forEach(n=>IMG.put(n,B.imgs[n]));
+    window.PYTU=B.pyt||{};store.set('dfw_pyt',JSON.stringify(window.PYTU));
+    store.set('dfw_bank',B.id);store.set('dfw_bv_'+B.id,B.ver);markBank();
+  });
+  markBank();
+  const renderNames=()=>{
+    const old=[...box.querySelectorAll('#plist input')].map(i=>i.value);
+    const pl=box.querySelector('#plist');pl.innerHTML='';pl.style.gridTemplateColumns=count>5?'1fr 1fr':'';pl.classList.toggle('tight',count>5);
+    for(let i=0;i<count;i++){
+      const r=el('div','prow');
+      r.innerHTML=`<div class="av" style="background:${COLORS[i]}">${AVATARS[i]}</div><input class="txt" maxlength="12" placeholder="玩家${i+1}" value="${esc(old[i]!=null?old[i]:(names[i]||''))}">`;
+      pl.append(r);
+    }
+    box.querySelectorAll('#cnt button').forEach(b=>b.classList.toggle('on',+b.dataset.n===count));
+  };
+  renderNames();
+  box.querySelectorAll('#cnt button').forEach(b=>b.onclick=()=>{Snd.init();Snd.click();count=+b.dataset.n;renderNames()});
+  box.querySelector('#imp').onclick=()=>pickFile('',t=>{
+    if(isPytTable(t)){
+      const r=importPytTable(t);
+      if(r.q){qta.value=r.q;upd()}
+      if(r.chance){S.texts.chance=r.chance;store.set('dfw_chance',r.chance)}
+      if(r.fate){S.texts.fate=r.fate;store.set('dfw_fate',r.fate)}
+    }else{qta.value=t;upd()}
+  });
+  box.querySelector('#def').onclick=()=>{qta.value=defQ();upd()};
+  box.querySelector('#imi').onclick=()=>pickImages(n=>toast(n?`已匯入 ${n} 張圖片`:'沒有找到可匯入的圖片'));
+  const cancel=box.querySelector('#cancel');if(cancel)cancel.onclick=hideModal;
+  box.querySelector('#go').onclick=()=>{
+    Snd.init();setTitle(box.querySelector('#ttl').value);
+    const ins=[...box.querySelectorAll('#plist input')];
+    S.texts.q=qta.value;S.shuffle=shf.checked;S.lastCount=count;store.set('dfw_q',S.texts.q);
+    startGame(ins.map((x,i)=>x.value.trim()||('玩家'+(i+1))));
+  };
+}
+
+function startGame(names){
+  S.players.forEach(p=>p.tk&&p.tk.remove());
+  S.players=names.map((n,i)=>({name:n,color:COLORS[i],emoji:AVATARS[i],money:START_MONEY,pos:0,tk:null,card:null}));
+  S.cur=0;S.busy=false;lastMoney.clear();
+  hideModal();applyBank();renderPlayers();renderTurn();setRollBtn();
+  say('');
+  Snd.win();confetti(120,.5,.5);
+  requestAnimationFrame(placeTokens);
+}
+
+/* =====================================================================
+   設定
+   ===================================================================== */
+function showSettings(){
+  const box=el('div','box sbox');box.style.setProperty('--bc','#ffa94d');
+  const tmp={q:S.texts.q,chance:S.texts.chance,fate:S.texts.fate};
+  let tab='q';
+  const TABS=[['q','📚 題庫'],['chance','🍀 機會'],['fate','🔮 命運'],['img','🖼️ 圖片'],['players','👥 玩家'],['display','🔤 名稱與文字']];
+  const HELP={
+    q:'每行一題：題目｜答案｜圖示｜獎金（100~1000，越難越高）｜圖片檔名。圖示、獎金、圖片都可省略，順序也可以對調。有填圖片檔名的題目就是「圖片題」。「#」開頭的行會被忽略。',
+    chance:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🧧｜撿到紅包｜200',
+    fate:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🌧️｜忘了帶傘｜-200'
+  };
+  box.innerHTML=`<h2>⚙️ 設定</h2><div class="tabs" id="tabs">${TABS.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('')}</div>
+    <div id="pane" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div class="row-btns" style="margin-top:4px"><button class="btn g" id="save">💾 套用並儲存</button><button class="btn r" id="close">取消</button></div>`;
+  const pane=box.querySelector('#pane');
+  const keep=()=>{const t=pane.querySelector('textarea');if(t&&tab!=='players'&&tab!=='display')tmp[tab]=t.value};
+  function render(){
+    box.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===tab));
+    if(tab==='img'){
+      const names=IMG.names();
+      pane.innerHTML=`<div class="help">匯入圖片後，在題庫那一行填上「檔名」（例如 蘋果.png），這題就會顯示圖片。也可以用網址。圖片只存在這台電腦的瀏覽器，換電腦要重新匯入。</div>
+        <div class="row-btns" style="margin:0;justify-content:space-between;align-items:center"><div class="status">共 ${names.length} 張圖片</div><button class="btn p s" id="addimg">📂 匯入圖片</button></div>
+        <div class="imgs">${names.length?names.map(n=>`<div class="imgc"><img alt="" src="${esc(IMG.map[n])}"><div class="nm" data-nopy>${esc(n)}</div><div class="bt"><button data-add="${esc(n)}">➕ 加為題目</button><button class="d" data-del="${esc(n)}">🗑️</button></div></div>`).join(''):'<div class="help" style="grid-column:1/-1">還沒有圖片。</div>'}</div>`;
+      pane.querySelector('#addimg').onclick=()=>pickImages(n=>{toast(n?`已匯入 ${n} 張圖片`:'沒有找到可匯入的圖片');render()});
+      pane.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+        keep();Snd.click();
+        tmp.q=tmp.q.replace(/\s*$/,'')+'\n'+`這是什麼？|（請填答案）|🖼️|300|${b.dataset.add}`;
+        tab='q';render();const ta=pane.querySelector('textarea');ta.focus();ta.scrollTop=ta.scrollHeight;
+      });
+      pane.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{Snd.click();IMG.del(b.dataset.del);render()});
+      return;
+    }
+    if(tab==='display'){
+      const cur=document.body.dataset.show||'both';
+      pane.innerHTML='<div class="lbl">🏷️ 遊戲名稱</div><input class="txt" id="ttl2" maxlength="10" placeholder="知識大富翁" value="'+esc(S.title)+'"><div class="help">選擇畫面上文字的顯示方式（立即生效）。</div><div class="plist">'+[['han','只有漢字'],['both','漢字＋拼音'],['py','只有拼音']].map(([v,l])=>`<label class="chk"><input type="radio" name="show" value="${v}" ${v===cur?'checked':''}><span>${l}</span></label>`).join('')+'</div><div class="help">拼音依據：教育部《國語辭典簡編本》（創用CC 姓名標示-禁止改作 3.0 臺灣）。</div>';
+      pane.querySelector('#ttl2').oninput=e=>setTitle(e.target.value);
+      pane.querySelectorAll('input[name=show]').forEach(r=>r.onchange=()=>{setShow(r.value);Snd.click()});
+      return;
+    }
+    if(tab==='players'){
+      if(!S.players.length){pane.innerHTML='<div class="help">遊戲還沒開始，請先按「開始遊戲」。</div>';return}
+      pane.innerHTML=`<div class="help">可以修改名字，也可以直接調整分數。</div><div class="plist" id="pl" style="${S.players.length>5?'grid-template-columns:1fr 1fr':''}">${S.players.map((p,i)=>`<div class="prow"><div class="av" style="background:${p.color}">${p.emoji}</div><input class="txt" maxlength="12" value="${esc(p.name)}" data-i="${i}"><input class="txt num" type="number" step="50" value="${p.money}" data-m="${i}"><span class="lbl">元</span></div>`).join('')}</div>`;
+      return;
+    }
+    const n=tab==='q'?parseQuestions(tmp.q).length:parseEvents(tmp[tab],tab).length;
+    pane.innerHTML=`<div class="help">${HELP[tab]}</div>
+      <textarea class="big" spellcheck="false"></textarea>
+      <div class="row-btns" style="margin:0;justify-content:space-between;align-items:center">
+        <div class="status" id="cnt2"></div>
+        <div style="display:flex;gap:10px"><button class="btn p s" id="imp">📂 匯入檔案</button><button class="btn b s" id="exp">⬇️ 匯出</button><button class="btn y s" id="rst">♻️ 還原預設</button></div></div>`;
+    const ta=pane.querySelector('textarea');ta.value=tmp[tab];
+    const info=()=>{pane.querySelector('#cnt2').textContent=tab==='q'?qStatus(ta.value):`共 ${parseEvents(ta.value,tab).length} 個事件`};
+    ta.addEventListener('input',info);info();
+    pane.querySelector('#imp').onclick=()=>pickFile('',t=>{
+      if(isPytTable(t)){
+        const r=importPytTable(t);
+        if(r.q)tmp.q=r.q;if(r.chance)tmp.chance=r.chance;if(r.fate)tmp.fate=r.fate;
+        render();
+      }else{ta.value=t;info()}
+    });
+    pane.querySelector('#exp').onclick=()=>downloadText({q:'題庫',chance:'機會',fate:'命運'}[tab]+'_'+stamp()+'.txt',ta.value);
+    pane.querySelector('#rst').onclick=()=>{ta.value={q:defQ(),chance:defC(),fate:defF()}[tab];info()};
+  }
+  box.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{Snd.click();keep();tab=b.dataset.k;render()});
+  render();showModal(box);Snd.init();Snd.click();
+  box.querySelector('#close').onclick=hideModal;
+  box.querySelector('#save').onclick=()=>{
+    keep();
+    const pl=pane.querySelector('#pl');
+    if(pl&&S.players.length){
+      pl.querySelectorAll('input[data-i]').forEach(i=>S.players[+i.dataset.i].name=i.value.trim()||('玩家'+(+i.dataset.i+1)));
+      pl.querySelectorAll('input[data-m]').forEach(i=>S.players[+i.dataset.m].money=Math.max(0,parseInt(i.value,10)||0));
+    }
+    const qChanged=tmp.q!==S.texts.q;
+    S.texts.q=tmp.q;S.texts.chance=tmp.chance;S.texts.fate=tmp.fate;
+    store.set('dfw_q',S.texts.q);store.set('dfw_chance',S.texts.chance);store.set('dfw_fate',S.texts.fate);
+    if(qChanged)applyBank();
+    renderPlayers();renderTurn();hideModal();Snd.win();
+    toast(qChanged?'已儲存，棋盤題目已更新！':'已儲存設定！');
+  };
+}
+
+const DEF_TITLE='知識大富翁';
+function setTitle(t){
+  t=(t||'').trim().slice(0,10)||DEF_TITLE;S.title=t;store.set('dfw_title',t);
+  $('#logoT').textContent=t;$('#gTitle').textContent=t;document.title=t;
+  $('#gTitle').style.setProperty('--ts',Math.min(6.4,38/Math.max(t.length,1)).toFixed(2));
+}
+function setShow(v){document.body.dataset.show=v;store.set('dfw_show',v)}
+/* 下載成績 */
+function downloadScores(){
+  if(!S.players.length){toast('還沒有玩家，請先開始遊戲');return}
+  const rows=S.players.map(p=>({n:p.name,m:p.money})).sort((a,b)=>b.m-a.m);
+  let rank=0,prev=null,t=S.title+'　成績單\r\n時間：'+new Date().toLocaleString('zh-TW')+'\r\n玩家人數：'+rows.length+'\r\n====================\r\n名次\t姓名\t分數（元）\r\n';
+  rows.forEach((r,i)=>{if(r.m!==prev){rank=i+1;prev=r.m}t+=`${rank}\t${r.n}\t${r.m}\r\n`});
+  downloadText('大富翁成績_'+stamp()+'.txt',t);toast('已下載成績單！');Snd.coin();
+}
+
+/* =====================================================================
+   初始化
+   ===================================================================== */
+function bundleImgs(){
+  const cur=getBank(),o={};
+  banks().forEach(b=>{if(b!==cur)Object.assign(o,b.imgs||{})});
+  if(cur)Object.assign(o,cur.imgs||{});
+  return o;
+}
+function applyBundle(B,quiet){
+  S.texts.q=B.q;S.texts.chance=B.chance;S.texts.fate=B.fate;
+  store.set('dfw_q',B.q);store.set('dfw_chance',B.chance);store.set('dfw_fate',B.fate);
+  Object.keys(B.imgs||{}).forEach(n=>IMG.put(n,B.imgs[n]));
+  window.PYTU=B.pyt||{};store.set('dfw_pyt',JSON.stringify(window.PYTU));
+  store.set('dfw_bank',B.id);store.set('dfw_bv_'+B.id,B.ver);
+  applyBank();
+  if(!quiet){
+    if(!S.players.length)showStart(); // 還沒開始遊戲，就用新題庫重畫開始畫面
+    toast(`已套用「${B.name}」：題目 ${B.counts.q} 題、圖片 ${B.counts.imgs} 張、機會 ${B.counts.chance}、命運 ${B.counts.fate}`);
+  }
+}
+function askChoice(title,note){
+  return new Promise(res=>{
+    const box=el('div','box');box.style.setProperty('--bc','#51cf66');box.style.maxWidth='min(820px,94vw)';
+    const cur=store.get('dfw_bank');
+    box.innerHTML=`<div class="ctitle">📦 ${title}</div>
+      <div class="help" style="text-align:center">${note}</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${banks().map((b,i)=>`<button class="btn ${b.id===cur?'y':'g'}" data-i="${i}">${esc(b.name)}　題目 ${b.counts.q}（圖片題 ${b.counts.imgs}）・機會 ${b.counts.chance}・命運 ${b.counts.fate}</button>`).join('')}
+        <button class="btn r s" data-i="-1">保留我目前的題庫</button></div>`;
+    showModal(box);
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{hideModal();res(+b.dataset.i)});
+  });
+}
+async function bundleSync(){
+  const bs=banks();
+  if(!bs.length)return;
+  if(location.hash.startsWith('#test')&&location.hash!=='#testbundle')return;
+  const sel=store.get('dfw_bank'),cur=bs.find(b=>b.id===sel);
+  if(!store.get('dfw_q')||location.hash==='#testbundle'){applyBundle(bs[0]);return}   // 全新的瀏覽器：直接用最新的題庫
+  if(sel==='mine')return;                                                             // 使用者選了保留自己的題庫
+  if(cur&&store.get('dfw_bv_'+cur.id)===cur.ver)return;                               // 已經是最新版
+  const i=await askChoice(cur?'題庫有更新':'有內建題庫',cur?`「${esc(cur.name)}」有新版本，要套用嗎？套用後會取代目前的題庫、機會和命運。`:'請選擇要用哪一個題庫。選了之後，會取代目前的題庫、機會和命運。');
+  if(i>=0)applyBundle(bs[i]);
+  else{store.set('dfw_bank','mine');if(!S.players.length)showStart()}
+}
+function init(){
+  // 背景裝飾
+  const deco=$('#bgdeco'),list=['☁️','⭐','🎈','🌟','🍬','🎵','🎲','🌈','🪙','🎁','🦋','🍭'];
+  for(let i=0;i<16;i++){
+    const s=el('span','',list[i%list.length]);
+    s.style.left=(i*37%100)+'%';s.style.top=((i*53+11)%92)+'%';s.style.fontSize=(30+(i*7)%40)+'px';
+    s.style.animationDelay=(-i*0.9)+'s';s.style.animationDuration=(5+i%5)+'s';deco.append(s);
+  }
+  setDie($('#d1'),1);setDie($('#d2'),1);
+  $('#seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(S.busy)return;Snd.init();Snd.click();setDiceMode(+b.dataset.n)});
+  $('#rollBtn').onclick=doRoll;
+  $('#bSet').onclick=()=>{if(!S.busy)showSettings()};
+  $('#bNew').onclick=()=>{if(!S.busy){Snd.init();Snd.click();showStart()}};
+  $('#bDl').onclick=()=>{Snd.init();downloadScores()};
+  $('#bSnd').onclick=()=>{Snd.init();Snd.on=!Snd.on;$('#bSnd').textContent=Snd.on?'🔊 音效':'🔇 靜音';if(Snd.on)Snd.click()};
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!ov.classList.contains('show')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();doRoll()}});
+  setTitle(store.get('dfw_title'));
+  setShow(['han','both','py'].includes(store.get('dfw_show'))?store.get('dfw_show'):'both');
+  try{window.PYTU=JSON.parse(store.get('dfw_pyt')||'{}')}catch(e){window.PYTU={}}
+  Promise.race([IMG.load(),new Promise(r=>setTimeout(r,2500))]).then(bundleSync);
+  applyBank();renderPlayers();renderTurn();setRollBtn();
+  annotate(document.body);obs.observe(document.body,OBS_CFG);
+  if(location.hash.startsWith('#test')){
+    confetti=()=>{};startGame(location.hash==='#test10'?['小明','小華','美美','大雄','阿強','小芳','志明','春嬌','大寶','小玉']:['小明','小華','美美','大雄']);
+    const h=location.hash;if(h==='#testq')questionModal(S.players[0],5);else if(h==='#teste')eventCard(S.players[0],CORNERS[10]);else if(h==='#testl')showEventList('chance');else if(h==='#tests')showSettings();else if(h==='#testtab'){showSettings();document.querySelector('#tabs [data-k=img]').click();IMG.map['蘋果.png']='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="40" fill="red"/></svg>');document.querySelector('#tabs [data-k=img]').click()}else if(h==='#testroll')doRoll();else if(h==='#testimg'){const svg='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#bde0fe"/><circle cx="300" cy="200" r="120" fill="#e63946"/><text x="300" y="225" font-size="80" text-anchor="middle" fill="#fff">TEST</text></svg>');S.cellQ[5]={q:'這是什麼？',a:'測試圖片',img:svg,icon:'🖼️',money:300,lv:2};questionModal(S.players[0],5)}
+  }
+  else showStart();
+}
+init();
+</script>
+</body>
+</html>
