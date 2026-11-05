@@ -1429,7 +1429,6 @@ async function doRoll(){
   if(S.busy||!S.players.length)return;
   Snd.init();S.busy=true;setRollBtn();placeTokens();
   const p=S.players[S.cur],d1=$('#d1'),d2=$('#d2'),n=S.diceN;
-  let again=false;
   try{
     say('');
     Snd.roll();
@@ -1438,16 +1437,14 @@ async function doRoll(){
     while(performance.now()-t0<1100){a=1+rnd(6);b=1+rnd(6);setDie(d1,a);setDie(d2,b);await sleep(85)}
     [d1,d2].forEach(d=>{d.classList.remove('rolling');d.classList.add('pop')});
     const total=n===1?a:a+b;
-    again=n===2&&a===b;
     Snd.coin();
-    say(`${n===1?'':a+' + '+b+' = '}<b style="color:#e63946">${total}</b> 點！前進 ${total} 格${again?'　🎊 兩顆一樣，再擲一次！':''}`);
+    say(`${n===1?'':a+' + '+b+' = '}<b style="color:#e63946">${total}</b> 點！前進 ${total} 格`);
     await sleep(700);
     await movePlayer(p,total);
     await landOn(p);
   }catch(e){console.error(e)}
   S.busy=false;
-  if(again){say(`🎊 ${esc(p.name)} 擲出相同點數，再擲一次！`)}
-  else{S.cur=(S.cur+1)%S.players.length;say('')}
+  S.cur=(S.cur+1)%S.players.length;   // 不論點數，一定換下一位（不再有「兩顆一樣再擲一次」的規則）
   renderPlayers();renderTurn();setRollBtn();placeTokens();
 }
 
