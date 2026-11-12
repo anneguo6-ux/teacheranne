@@ -1,7 +1,8 @@
 /* 拼音對照表 編輯器：改拼音、增刪題目（含圖片）、自動產生拼音、下載修改後的檔案 */
 (function () {
   'use strict';
-  var KEY = 'pyt_state_v2';
+  // 暫存依檔案分開（不同題庫檔不會互相蓋掉）；v3 起題庫多了「課別」欄，舊的暫存不再還原
+  var KEY = 'pyt_state_v3:' + decodeURIComponent(location.pathname.split('/').pop() || '');
   var SECS = ['q', 'c', 'f'];
   var CJK_G = /[㐀-鿿豈-﫿]/g;
   var LAT = /[A-Za-zÀ-ɏẠ-ỹ]+(?:[ ][A-Za-zÀ-ɏẠ-ỹ]+)*/g;
@@ -50,7 +51,7 @@
 
   /* ---------- 準備列（可編輯屬性、按鈕） ---------- */
   function prep(root) {
-    $$('div.h, div.p, td.ic, td.m', root).forEach(function (c) {
+    $$('div.h, div.p, td.ic, td.m, td.ls', root).forEach(function (c) {
       c.setAttribute('contenteditable', 'true'); c.setAttribute('spellcheck', 'false');
     });
     (root.tagName === 'TR' ? [root] : $$('tr', root)).forEach(function (tr) {
@@ -98,15 +99,32 @@
     filter();
   }
   function filter() {
-    var q = search.value.trim().toLowerCase(), m = mode.value;
+    var q = search.value.trim().toLowerCase(), m = mode.value, l = lesson ? lesson.value : 'all';
     $$('tbody tr').forEach(function (tr) {
       var ok = true;
-      if (q) ok = tr.textContent.toLowerCase().indexOf(q) >= 0;
+      if (l !== 'all' && secOf(tr) === 'q') ok = lessonOf(tr) === l;
+      if (ok && q) ok = tr.textContent.toLowerCase().indexOf(q) >= 0;
       if (ok && m === 'mod') ok = !!$('div.p.mod', tr) || tr.classList.contains('new');
       if (ok && m === 'bad') ok = !!$('div.p.bad', tr);
       if (ok && m === 'empty') ok = !!$('div.p.empty', tr);
       tr.style.display = ok ? '' : 'none';
     });
+  }
+
+  /* ---------- 課別（題庫有「課別」欄時才有） ---------- */
+  var lesson = null;
+  function hasLesson() { var tb = tbody('q'), t = tb && tb.parentNode; return !!(t && t.tHead && /課別/.test(t.tHead.textContent)); }
+  function lessonOf(tr) { var c = $('td.ls', tr); return c ? txt(c) : ''; }
+  function lessonKey(s) { var n = parseInt(String(s).replace(/\D/g, ''), 10); return isNaN(n) ? 999 : n; }
+  function lessonOptions() {
+    if (!lesson) return;
+    var cnt = {}, cur = lesson.value;
+    $$('tr', tbody('q')).forEach(function (tr) { var l = lessonOf(tr); cnt[l] = (cnt[l] || 0) + 1; });
+    var ks = Object.keys(cnt).sort(function (a, b) { return lessonKey(a) - lessonKey(b) || (a < b ? -1 : 1); });
+    lesson.innerHTML = '<option value="all">課別：全部</option>' + ks.map(function (k) {
+      return '<option value="' + k.replace(/"/g, '&quot;') + '">' + (k || '（未分類）') + '（' + cnt[k] + ' 題）</option>';
+    }).join('');
+    lesson.value = cnt[cur] ? cur : 'all';
   }
 
   /* ---------- 暫存 ---------- */
@@ -122,7 +140,7 @@
       } catch (e) { warn.textContent = '⚠️ 瀏覽器暫存空間不足（圖片太多），請記得按「下載修改後的檔案」。'; }
     }, 400);
   }
-  function changed() { renumber(); status(); save(); }
+  function changed() { renumber(); lessonOptions(); status(); save(); }
 
   /* ---------- 圖片 ---------- */
   function toData(file, cb) {
@@ -167,11 +185,21 @@
   function addRow(id) {
     var tb = tbody(id), tr = document.createElement('tr');
     var two = '<td><div class="h"></div><div class="p"></div></td>';
+    // 新題目的課別：正在篩選某一課就用那一課，否則跟最後一題相同；並插在那一課的最後面
+    var ls = null, after = null;
+    if (id === 'q' && hasLesson()) {
+      var last = tb.rows[tb.rows.length - 1];
+      ls = lesson && lesson.value !== 'all' ? lesson.value : (last ? lessonOf(last) : '');
+      $$('tr', tb).forEach(function (r) { if (lessonOf(r) === ls) after = r; });
+    }
     tr.innerHTML = '<td class="no"></td>' + two + (id === 'q' ? two : '') +
       '<td class="ic"></td><td class="m">100</td>' +
+      (ls !== null ? '<td class="ls"></td>' : '') +
       (id === 'q' ? '<td class="im"></td>' : '') + '<td class="op"></td>';
+    if (ls !== null) $('td.ls', tr).textContent = ls;
     tr.className = 'new';
-    tb.appendChild(tr); prep(tr); changed();
+    if (after) tb.insertBefore(tr, after.nextSibling); else tb.appendChild(tr);
+    prep(tr); changed();
     $('div.h', tr).focus();
     tr.scrollIntoView({ block: 'center' });
   }
@@ -186,7 +214,7 @@
     $$('tbody tr', clone).forEach(function (tr) { tr.removeAttribute('style'); tr.removeAttribute('class'); });
     $$('div.h', clone).forEach(function (d) { var t = txt(d); d.setAttribute('class', 'h'); d.removeAttribute('title'); d.textContent = t; });
     $$('div.p', clone).forEach(function (d) { var t = txt(d); d.setAttribute('class', 'p'); d.removeAttribute('title'); d.removeAttribute('data-auto'); d.textContent = t; });
-    $$('td.ic', clone).forEach(function (d) { d.textContent = txt(d); });
+    $$('td.ic, td.ls', clone).forEach(function (d) { d.textContent = txt(d); });
     $$('td.m', clone).forEach(function (d) { var n = parseInt(txt(d), 10); d.textContent = isNaN(n) ? '0' : String(n); });
     $$('img.thumb', clone).forEach(function (i) { i.removeAttribute('title'); });
     return '<!doctype html>' + clone.outerHTML;
@@ -209,6 +237,11 @@
     '<div class="tip"><b>編輯：</b>直接點文字就能改（漢字、藍字拼音、圖示、金額都可以）。拼音的音節用空白隔開。<b>圖示：</b>留空時，匯入遊戲後由系統依題目內容自動配圖示（有圖片的題目會用 🖼️）。<b>新增題目：</b>按上方的「＋ 新增…」（每個表格下方也有），輸入漢字後，拼音會自動補上，之後仍可修改；題庫的圖片欄可選圖片（也可拖曳圖片進去）。<b>套用到遊戲：</b>改完按「💾 下載」，到遊戲「設定」或「遊戲設定」按「匯入題庫檔」，選這個下載的檔案，題目、圖片、機會、命運和拼音都會一起匯入。</div>';
   document.body.insertBefore(bar, document.body.firstChild);
   st = $('#b-st'); search = $('#b-q'); mode = $('#b-m'); warn = $('#b-warn');
+  if (hasLesson()) {
+    lesson = document.createElement('select'); lesson.id = 'b-l'; lesson.title = '只看某一課的題目（機會、命運不受影響）';
+    mode.parentNode.insertBefore(lesson, mode);
+    lessonOptions();
+  }
 
   prep(document);
   renumber();
@@ -219,7 +252,7 @@
     if (sv && SECS.some(function (id) { return sv[id] !== orig[id]; })) {
       if (confirm('找到上次還沒下載的修改（' + new Date(sv.t).toLocaleString('zh-TW') + '），要還原嗎？\n按「取消」會捨棄那些修改。')) {
         SECS.forEach(function (id) { if (sv[id] != null) tbody(id).innerHTML = sv[id]; });
-        prep(document); renumber();
+        prep(document); renumber(); lessonOptions();
       } else { localStorage.removeItem(KEY); }
     }
   } catch (e) {}
@@ -236,7 +269,7 @@
     }
     var ic = t.closest('td.ic');
     if (ic && !ic.textContent.trim()) ic.innerHTML = '';
-    if (t.closest('div.h,div.p,td.ic,td.m')) { status(); save(); }
+    if (t.closest('div.h,div.p,td.ic,td.m,td.ls')) { status(); save(); }
   });
   document.addEventListener('focusout', function (e) {
     var t = e.target; if (!t.closest) return;
@@ -248,6 +281,8 @@
       }
       renumber(); status(); save();
     }
+    var ls = t.closest('td.ls');
+    if (ls) { ls.textContent = txt(ls).toUpperCase(); lessonOptions(); status(); save(); }
     var m = t.closest('td.m');
     if (m) {
       var n = parseInt(txt(m).replace(/[^\d-]/g, ''), 10);
@@ -258,7 +293,7 @@
     }
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target.closest && e.target.closest('div.h,div.p,td.ic,td.m')) { e.preventDefault(); e.target.blur(); }
+    if (e.key === 'Enter' && e.target.closest && e.target.closest('div.h,div.p,td.ic,td.m,td.ls')) { e.preventDefault(); e.target.blur(); }
   });
   document.addEventListener('paste', function (e) {
     if (e.target.closest && e.target.closest('[contenteditable]')) {
@@ -304,10 +339,11 @@
   $('#b-rs').onclick = function () {
     if (!confirm('要把這一頁的所有修改（包括新增、刪除的題目）都還原成開啟時的樣子嗎？')) return;
     SECS.forEach(function (id) { tbody(id).innerHTML = orig[id]; });
-    prep(document); renumber();
+    prep(document); renumber(); lessonOptions();
     try { localStorage.removeItem(KEY); } catch (e) {}
     status();
   };
   search.addEventListener('input', filter);
   mode.addEventListener('change', filter);
+  if (lesson) lesson.addEventListener('change', filter);
 })();

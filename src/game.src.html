@@ -308,6 +308,9 @@ input.txt{font:800 clamp(17px,2.8vmin,24px) "Microsoft JhengHei",sans-serif;bord
 .prow input.num{width:7.5em;flex:none}
 .start-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px}
 @media (max-aspect-ratio:1/1){.start-grid{grid-template-columns:1fr}}
+.lchips{display:flex;flex-wrap:wrap;gap:4px}
+.lchips button{font-size:clamp(13px,2.1vmin,18px);font-weight:900;line-height:1.6;padding:0 8px;border-radius:999px;background:#e9ecef;box-shadow:0 3px 0 rgba(0,0,0,.18);white-space:nowrap}
+.lchips button.on{background:linear-gradient(180deg,#74c0fc,#1971c2);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
 .lbl{font-size:clamp(18px,3vmin,26px);font-weight:900;line-height:1.9;color:#1971c2}
 .cnt{display:flex;gap:8px;flex-wrap:wrap}
 .cnt button{width:clamp(44px,7vmin,62px);aspect-ratio:1;border-radius:14px;background:#e9ecef;font-size:clamp(22px,3.8vmin,34px);font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.2)}
@@ -1125,10 +1128,10 @@ function parseQuestions(text){
     if(!line||/^(#|\/\/)/.test(line))return;
     const f=splitFields(line).map(unq);
     if(!f[0]||f[0]==='題目')return;
-    const q=f[0],a=f[1]||'';let icon='',money=0,img='';
-    f.slice(2).forEach(x=>{if(/^\d+$/.test(x))money=+x;else if(looksImg(x))img=x;else if(x)icon=x});
+    const q=f[0],a=f[1]||'';let icon='',money=0,img='',lesson='';
+    f.slice(2).forEach(x=>{if(/^\d+$/.test(x))money=+x;else if(/^[@＠]/.test(x))lesson=x.slice(1).trim();else if(looksImg(x))img=x;else if(x)icon=x});
     money=money?clampMoney(money):estimateMoney(q,a);
-    out.push({q,a,img,icon:icon||(img?'🖼️':autoIcon(q+a)),money,lv:Math.ceil(money/200)});
+    out.push({q,a,img,lesson,icon:icon||(img?'🖼️':autoIcon(q+a)),money,lv:Math.ceil(money/200)});
   });
   return out;
 }
@@ -1170,7 +1173,7 @@ const getBank=()=>{const id=store.get('dfw_bank');return banks().find(b=>b.id===
 const defQ=()=>(getBank()&&getBank().q)||DEFAULT_Q;
 const defC=()=>(getBank()&&getBank().chance)||DEFAULT_CHANCE;
 const defF=()=>(getBank()&&getBank().fate)||DEFAULT_FATE;
-const S={title:'知識大富翁',
+const S={lessons:(()=>{try{return JSON.parse(store.get('dfw_lessons')||'[]')}catch(e){return []}})(),title:'知識大富翁',
   players:[],cur:0,busy:false,diceN:1,
   boardQ:[],               // 36 題
   cellQ:{},                // 格子索引 -> 題目
@@ -1219,8 +1222,29 @@ function buildBoard(){
   }
   placeTokens();
 }
+/* ---- 課別：題庫每題可標「@L1」這樣的課別，開始遊戲前可以選要出哪幾課 ---- */
+const lessonKey=k=>{const n=parseInt(String(k).replace(/\D/g,''),10);return isNaN(n)?999:n};
+function lessonStats(items){
+  const c={};items.forEach(q=>{const k=q.lesson||'';c[k]=(c[k]||0)+1});
+  return Object.keys(c).sort((a,b)=>lessonKey(a)-lessonKey(b)||(a<b?-1:1)).map(k=>[k,c[k]]);
+}
+function filterLessons(items,sel){
+  if(!sel||!sel.length)return items;
+  const set=new Set(sel),r=items.filter(q=>set.has(q.lesson||''));
+  return r.length?r:items;
+}
+function lessonPicker(host,getItems,sel,onChange){
+  const stats=lessonStats(getItems());
+  for(let i=sel.length-1;i>=0;i--)if(!stats.some(x=>x[0]===sel[i]))sel.splice(i,1); // 這個題庫沒有的課別就移除
+  const has=stats.some(x=>x[0]);
+  if(host.parentNode&&host.parentNode.dataset.lsec!==undefined)host.parentNode.style.display=has?'':'none';
+  host.innerHTML='';
+  const mk=(label,on,fn)=>{const b=el('button','',label);b.type='button';b.classList.toggle('on',on);b.onclick=()=>{Snd.init();Snd.click();fn();lessonPicker(host,getItems,sel,onChange);onChange()};host.append(b)};
+  mk('全部',!sel.length,()=>{sel.length=0});
+  stats.forEach(([k,n])=>mk(`${k||'未分類'}（${n}）`,sel.includes(k),()=>{const i=sel.indexOf(k);if(i>=0)sel.splice(i,1);else sel.push(k)}));
+}
 function applyBank(){
-  const items=parseQuestions(S.texts.q);
+  const items=filterLessons(parseQuestions(S.texts.q),S.lessons);
   if(!items.length){S.texts.q=defQ();return applyBank()}
   S.boardQ=buildQuestionSet(items,S.shuffle);
   buildBoard();
@@ -1492,13 +1516,13 @@ function importPytTable(html){
     if(!q)return;
     learn(tds[1]);learn(tds[2]);
     let icon=tx(tr.querySelector('td.ic'));if(icon==='❓')icon='';
-    const m=parseInt(tx(tr.querySelector('td.m')),10),img=tr.querySelector('td.im img');
+    const m=parseInt(tx(tr.querySelector('td.m')),10),img=tr.querySelector('td.im img'),ls=tx(tr.querySelector('td.ls'));
     let name='';
     if(img&&/^data:/.test(img.getAttribute('src')||'')){
       name=img.getAttribute('data-name')||('圖片'+(nImg+1)+'.jpg');
       IMG.put(name,img.getAttribute('src'));nImg++;
     }
-    qs.push([fld(q),fld(a),icon,isNaN(m)?'':m,name].join('|').replace(/\|+$/,''));
+    qs.push([fld(q),fld(a),icon,isNaN(m)?'':m,ls?'@'+fld(ls):'',name].join('|').replace(/\|+$/,''));
   });
   const ev=(id,out)=>{const t=tb(id);if(t)[...t.rows].forEach(tr=>{
     const c=tr.cells[1],text=tx(c&&c.querySelector('.h'));if(!text)return;
@@ -1522,8 +1546,11 @@ function downloadText(name,text){
 }
 function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`}
 
-function qStatus(text){
-  const n=parseQuestions(text).length;
+function qStatus(text,sel){
+  const all=parseQuestions(text),n=filterLessons(all,sel).length,pre=(sel&&sel.length&&n!==all.length)?`已選 ${sel.join('、')}：`:'';
+  return pre+qStatus0(n);
+}
+function qStatus0(n){
   if(!n)return `⚠️ 還沒有有效的題目，開始時會使用預設題庫。`;
   if(n<QCOUNT)return `目前 ${n} 題，不足 ${QCOUNT} 題，開始時會「隨機重複」題目補滿 ${QCOUNT} 題。`;
   if(n===QCOUNT)return `目前剛好 ${QCOUNT} 題，很棒！`;
@@ -1542,11 +1569,12 @@ function showStart(){
         <div class="cnt" id="cnt">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div>
         <div class="lbl" style="margin-top:6px">✏️ 玩家名字</div>
         <div class="plist" id="plist"></div>
+        <div data-lsec style="display:none"><div class="lbl" style="margin-top:6px">📖 課別（可複選）</div><div class="lchips" id="lessons"></div></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
         <div class="lbl">📚 題庫</div>
         ${banks().length?`<div class="cnt" id="banks" style="gap:6px">${banks().map((b,i)=>`<button class="btn s" data-i="${i}" style="width:auto;aspect-ratio:auto;padding:0 14px;font-size:clamp(15px,2.5vmin,22px)">📦 ${esc(b.name)}（${b.counts.q}）</button>`).join('')}</div>`:''}
-        <textarea class="big" id="qta" style="height:min(21vh,210px)" spellcheck="false"></textarea>
+        <textarea class="big" id="qta" style="height:min(16vh,170px)" spellcheck="false"></textarea>
         <div class="help">每行一題：題目｜答案｜圖示｜獎金（100~1000）｜圖片檔名。圖示、獎金、圖片可省略。</div>
         <div class="status" id="qst"></div>
         <label class="chk"><input type="checkbox" id="shf"><span>隨機打亂題目的順序</span></label>
@@ -1561,13 +1589,15 @@ function showStart(){
   showModal(box);
   const qta=box.querySelector('#qta'),shf=box.querySelector('#shf');
   qta.value=S.texts.q;shf.checked=S.shuffle;box.querySelector('#ttl').value=S.title;
-  const upd=()=>box.querySelector('#qst').textContent=qStatus(qta.value);
-  qta.addEventListener('input',upd);upd();
+  const selS=S.lessons.slice();
+  const upd=()=>box.querySelector('#qst').textContent=qStatus(qta.value,selS);
+  const drawL=()=>lessonPicker(box.querySelector('#lessons'),()=>parseQuestions(qta.value),selS,upd);
+  qta.addEventListener('input',()=>{drawL();upd()});drawL();upd();
   const markBank=()=>box.querySelectorAll('#banks button').forEach(b=>{const on=banks()[+b.dataset.i].id===store.get('dfw_bank');b.style.background=on?'linear-gradient(180deg,#ffd43b,#f08c00)':'#e9ecef';b.style.color=on?'#fff':'inherit'});
   box.querySelectorAll('#banks button').forEach(b=>b.onclick=()=>{
     Snd.init();Snd.click();
     const B=banks()[+b.dataset.i];
-    qta.value=B.q;upd();
+    qta.value=B.q;drawL();upd();
     S.texts.chance=B.chance;S.texts.fate=B.fate;store.set('dfw_chance',B.chance);store.set('dfw_fate',B.fate);
     Object.keys(B.imgs||{}).forEach(n=>IMG.put(n,B.imgs[n]));
     window.PYTU=B.pyt||{};store.set('dfw_pyt',JSON.stringify(window.PYTU));
@@ -1589,18 +1619,18 @@ function showStart(){
   box.querySelector('#imp').onclick=()=>pickFile('',t=>{
     if(isPytTable(t)){
       const r=importPytTable(t);
-      if(r.q){qta.value=r.q;upd()}
+      if(r.q){qta.value=r.q;drawL();upd()}
       if(r.chance){S.texts.chance=r.chance;store.set('dfw_chance',r.chance)}
       if(r.fate){S.texts.fate=r.fate;store.set('dfw_fate',r.fate)}
-    }else{qta.value=t;upd()}
+    }else{qta.value=t;drawL();upd()}
   });
-  box.querySelector('#def').onclick=()=>{qta.value=defQ();upd()};
+  box.querySelector('#def').onclick=()=>{qta.value=defQ();drawL();upd()};
   box.querySelector('#imi').onclick=()=>pickImages(n=>toast(n?`已匯入 ${n} 張圖片`:'沒有找到可匯入的圖片'));
   const cancel=box.querySelector('#cancel');if(cancel)cancel.onclick=hideModal;
   box.querySelector('#go').onclick=()=>{
     Snd.init();setTitle(box.querySelector('#ttl').value);
     const ins=[...box.querySelectorAll('#plist input')];
-    S.texts.q=qta.value;S.shuffle=shf.checked;S.lastCount=count;store.set('dfw_q',S.texts.q);
+    S.texts.q=qta.value;S.shuffle=shf.checked;S.lastCount=count;store.set('dfw_q',S.texts.q);S.lessons=selS.slice();store.set('dfw_lessons',JSON.stringify(S.lessons));
     startGame(ins.map((x,i)=>x.value.trim()||('玩家'+(i+1))));
   };
 }
@@ -1621,10 +1651,11 @@ function startGame(names){
 function showSettings(){
   const box=el('div','box sbox');box.style.setProperty('--bc','#ffa94d');
   const tmp={q:S.texts.q,chance:S.texts.chance,fate:S.texts.fate};
+  const tmpL=S.lessons.slice();
   let tab='q';
-  const TABS=[['q','📚 題庫'],['chance','🍀 機會'],['fate','🔮 命運'],['img','🖼️ 圖片'],['players','👥 玩家'],['display','🔤 名稱與文字']];
+  const TABS=[['q','📚 題庫'],['lesson','📖 課別'],['chance','🍀 機會'],['fate','🔮 命運'],['img','🖼️ 圖片'],['players','👥 玩家'],['display','🔤 名稱與文字']];
   const HELP={
-    q:'每行一題：題目｜答案｜圖示｜獎金（100~1000，越難越高）｜圖片檔名。圖示、獎金、圖片都可省略，順序也可以對調。有填圖片檔名的題目就是「圖片題」。「#」開頭的行會被忽略。',
+    q:'每行一題：題目｜答案｜圖示｜獎金（100~1000，越難越高）｜圖片檔名｜@課別（例如 @L3）。圖示、獎金、圖片、課別都可省略，順序也可以對調。有填圖片檔名的題目就是「圖片題」。「#」開頭的行會被忽略。',
     chance:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🧧｜撿到紅包｜200',
     fate:'每行一個事件：圖示｜內容｜金額。金額為正數加錢、負數扣錢。例如：🌧️｜忘了帶傘｜-200'
   };
@@ -1635,6 +1666,15 @@ function showSettings(){
   const keep=()=>{const t=pane.querySelector('textarea');if(t&&tab!=='players'&&tab!=='display')tmp[tab]=t.value};
   function render(){
     box.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===tab));
+    if(tab==='lesson'){
+      pane.innerHTML=`<div class="help">選擇要出哪幾課的題目（可以複選；不選或選「全部」就是全部課別）。選好後按「套用並儲存」，棋盤就會換成那幾課的題目。題庫裡每一題用「@課別」標記，例如 @L3。</div>
+        <div data-lsec><div class="lchips" id="lessons"></div></div><div class="status" id="lst"></div>`;
+      const stat=()=>pane.querySelector('#lst').textContent=qStatus(tmp.q,tmpL);
+      const items=parseQuestions(tmp.q);
+      if(!items.some(q=>q.lesson)){pane.querySelector('#lessons').innerHTML='<div class="help">這個題庫沒有標示課別。</div>';return}
+      lessonPicker(pane.querySelector('#lessons'),()=>parseQuestions(tmp.q),tmpL,stat);stat();
+      return;
+    }
     if(tab==='img'){
       const names=IMG.names();
       pane.innerHTML=`<div class="help">匯入圖片後，在題庫那一行填上「檔名」（例如 蘋果.png），這題就會顯示圖片。也可以用網址。圖片只存在這台電腦的瀏覽器，換電腦要重新匯入。</div>
@@ -1668,7 +1708,7 @@ function showSettings(){
         <div class="status" id="cnt2"></div>
         <div style="display:flex;gap:10px"><button class="btn p s" id="imp">📂 匯入檔案</button><button class="btn b s" id="exp">⬇️ 匯出</button><button class="btn y s" id="rst">♻️ 還原預設</button></div></div>`;
     const ta=pane.querySelector('textarea');ta.value=tmp[tab];
-    const info=()=>{pane.querySelector('#cnt2').textContent=tab==='q'?qStatus(ta.value):`共 ${parseEvents(ta.value,tab).length} 個事件`};
+    const info=()=>{pane.querySelector('#cnt2').textContent=tab==='q'?qStatus(ta.value,tmpL):`共 ${parseEvents(ta.value,tab).length} 個事件`};
     ta.addEventListener('input',info);info();
     pane.querySelector('#imp').onclick=()=>pickFile('',t=>{
       if(isPytTable(t)){
@@ -1690,7 +1730,9 @@ function showSettings(){
       pl.querySelectorAll('input[data-i]').forEach(i=>S.players[+i.dataset.i].name=i.value.trim()||('玩家'+(+i.dataset.i+1)));
       pl.querySelectorAll('input[data-m]').forEach(i=>S.players[+i.dataset.m].money=Math.max(0,parseInt(i.value,10)||0));
     }
-    const qChanged=tmp.q!==S.texts.q;
+    const lChanged=JSON.stringify(tmpL)!==JSON.stringify(S.lessons);
+    S.lessons=tmpL.slice();store.set('dfw_lessons',JSON.stringify(S.lessons));
+    const qChanged=tmp.q!==S.texts.q||lChanged;
     S.texts.q=tmp.q;S.texts.chance=tmp.chance;S.texts.fate=tmp.fate;
     store.set('dfw_q',S.texts.q);store.set('dfw_chance',S.texts.chance);store.set('dfw_fate',S.texts.fate);
     if(qChanged)applyBank();

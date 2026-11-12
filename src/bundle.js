@@ -30,6 +30,7 @@ module.exports = function (file, pyt) {
     if (!q) return;
     let icon = plain(clsOf(tds, 'ic')); if (icon === '❓') icon = '';
     const m = parseInt(plain(clsOf(tds, 'm')), 10);
+    const ls = plain(clsOf(tds, 'ls'));
     const im = clsOf(tds, 'im').match(/<img[^>]*>/);
     let name = '';
     if (im) {
@@ -37,7 +38,7 @@ module.exports = function (file, pyt) {
       const nm = (im[0].match(/data-name="([^"]*)"/) || [])[1];
       if (/^data:/.test(src)) { name = un(nm || ('圖片' + (Object.keys(imgs).length + 1) + '.jpg')); imgs[name] = src; }
     }
-    qs.push([fld(q), fld(a), icon, isNaN(m) ? '' : m, name].join('|').replace(/\|+$/, ''));
+    qs.push([fld(q), fld(a), icon, isNaN(m) ? '' : m, ls ? '@' + fld(ls) : '', name].join('|').replace(/\|+$/, ''));
   });
   const ev = id => {
     const out = [];

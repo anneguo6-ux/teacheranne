@@ -26,3 +26,6 @@ p.addp button.add{font:inherit;font-weight:700;border:2px dashed #2f9e44;color:#
 p.addp button.add:hover{background:#ebfbee}
 @media print{#bar,p.addp,td.op{display:none}}
 td.ic:empty::before{content:"自動";color:#adb5bd;font-size:12px}
+td.ls{width:48px;text-align:center;white-space:nowrap;font-weight:700;color:#5f3dc4}
+td.ls:empty::before{content:"—";color:#adb5bd}
+#bar select#b-l{border-color:#9775fa}
